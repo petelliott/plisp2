@@ -1,14 +1,23 @@
 #include <plisp/read.h>
 #include <ctype.h>
 #include <stdlib.h>
+#include <Judy.h>
 
-
-void plisp_init_reader(void) {
-    //TODO intern table
-}
+// Judy's API makes no sense
+static Pvoid_t intern_table = NULL;
 
 plisp_t plisp_intern(plisp_t sym) {
-    //TODO
+    const unsigned char *key = (const unsigned char *)
+        plisp_string_value(plisp_symbol_name(sym));
+    plisp_t *val;
+    JSLG(val, intern_table, key);
+    if (val != NULL) {
+        return *val;
+    }
+
+    JSLI(val, intern_table, key);
+    *val = sym;
+
     return sym;
 }
 

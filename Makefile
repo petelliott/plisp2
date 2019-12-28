@@ -1,6 +1,6 @@
 CC=gcc
 CFLAGS=-Wall -O2 -Iinclude/
-LIBS=
+LIBS=-lJudy
 OBJS=bin/object.o bin/gc.o bin/main.o bin/read.o bin/write.o
 
 plisp: $(OBJS)

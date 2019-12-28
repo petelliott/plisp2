@@ -4,8 +4,6 @@
 #include <plisp/object.h>
 #include <stdio.h>
 
-void plisp_init_reader(void);
-
 plisp_t plisp_intern(plisp_t sym);
 
 plisp_t plisp_c_read(FILE *f);

@@ -2,9 +2,13 @@
 #include <plisp/read.h>
 #include <plisp/write.h>
 #include <stdio.h>
+#include <assert.h>
 
 
 int main(int argc, char *argv[]) {
+
+    assert(plisp_intern(plisp_make_symbol("abcd"))
+           == plisp_intern(plisp_make_symbol("abcd")));
     if (argc > 1) {
         /*
         FILE *file = fopen(argv[1], "r");
