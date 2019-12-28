@@ -26,6 +26,11 @@ enum plisp_hitag {
     HT_CHAR = 16, // highest 32-bits is a UTF-32 char
 };
 
+#define LOTAGS  0x0Flu
+#define HITAGS  0xFFlu
+#define LOSHIFT 4lu
+#define HISHIFT 8lu
+
 typedef uintptr_t plisp_t;
 
 bool plisp_c_fixnump(plisp_t val);
@@ -35,10 +40,15 @@ int64_t plisp_fixnum_value(plisp_t val);
 bool plisp_c_boolp(plisp_t val);
 plisp_t plisp_make_bool(bool val);
 bool plisp_bool_value(plisp_t val);
-
 bool plisp_c_charp(plisp_t val);
 plisp_t plisp_make_char(char val);
 char plisp_char_value(plisp_t val);
+
+
+struct plisp_cons {
+    plisp_t car;
+    plisp_t cdr;
+};
 
 bool plisp_c_consp(plisp_t val);
 plisp_t plisp_cons(plisp_t car, plisp_t cdr);

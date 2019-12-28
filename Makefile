@@ -1,7 +1,7 @@
 CC=gcc
 CFLAGS=-Wall -O2 -Iinclude/
 LIBS=
-OBJS=bin/object.o
+OBJS=bin/object.o bin/gc.o
 
 plisp: $(OBJS)
 	$(CC) $(CFLAGS) $^ -o $@ $(LIBS)
