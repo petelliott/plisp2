@@ -9,7 +9,7 @@ bool plisp_c_fixnump(plisp_t val) {
 }
 
 plisp_t plisp_make_fixnum(int64_t val) {
-    return (val << LOSHIFT) & LT_FIXNUM;
+    return (val << LOSHIFT) | LT_FIXNUM;
 }
 
 int64_t plisp_fixnum_value(plisp_t val) {
@@ -45,7 +45,7 @@ char plisp_char_value(plisp_t val) {
 }
 
 bool plisp_c_consp(plisp_t val) {
-    return ((val & LOTAGS) == LT_CONS) && (val != plisp_nil());
+    return ((val & LOTAGS) == LT_CONS) && (val != plisp_nil);
 }
 
 plisp_t plisp_cons(plisp_t car, plisp_t cdr) {
@@ -71,10 +71,6 @@ plisp_t plisp_cdr(plisp_t cons) {
 
 bool plisp_c_nullp(plisp_t val) {
     return val == (0lu | LT_CONS);
-}
-
-plisp_t plisp_nil(void) {
-    return 0lu | LT_CONS;
 }
 
 bool plisp_c_symbolp(plisp_t val) {
@@ -117,7 +113,7 @@ plisp_t plisp_make_vector(enum plisp_vec_type type, uint8_t
 
 plisp_t plisp_vector_ref(plisp_t vec, size_t idx) {
     //TODO ref vectors
-    return plisp_nil();
+    return plisp_nil;
 }
 
 bool plisp_c_stringp(plisp_t val) {
@@ -127,7 +123,7 @@ bool plisp_c_stringp(plisp_t val) {
 plisp_t plisp_make_string(const char *string) {
     size_t len = strlen(string);
     plisp_t str = plisp_make_vector(VEC_CHAR, 0, VFLAG_IMMUTABLE, len+1,
-                                    plisp_nil(), false);
+                                    plisp_nil, false);
     str = (str & ~LOTAGS) | LT_STRING;
     struct plisp_vector *strptr = (void *) (str & ~LOTAGS);
     strncpy(strptr->vec, string, len+1);

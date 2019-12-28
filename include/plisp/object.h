@@ -56,8 +56,7 @@ plisp_t plisp_car(plisp_t cons);
 plisp_t plisp_cdr(plisp_t cons);
 
 bool plisp_c_nullp(plisp_t val);
-plisp_t plisp_nil(void);
-
+#define plisp_nil ((plisp_t) (0lu | LT_CONS))
 
 enum plisp_vec_type {
     VEC_OBJ,
