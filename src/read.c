@@ -26,7 +26,7 @@ static plisp_t plisp_read_list(FILE *f) {
     if (ch == ')') {
         return plisp_nil;
     } else if (ch == '.') {
-        plisp_t cdr = plisp_read(f);
+        plisp_t cdr = plisp_c_read(f);
         do {
             ch = fgetc(f);
         } while (isspace(ch));
@@ -45,7 +45,7 @@ static plisp_t plisp_read_list(FILE *f) {
         return cdr;
     } else {
         ungetc(ch, f);
-        plisp_t car = plisp_read(f);
+        plisp_t car = plisp_c_read(f);
         plisp_t cdr = plisp_read_list(f);
 
         return plisp_cons(car, cdr);
@@ -162,7 +162,7 @@ static plisp_t plisp_read_number(FILE *f) {
 }
 
 plisp_t plisp_read_call(FILE *f, const char *sym) {
-    plisp_t body = plisp_read(f);
+    plisp_t body = plisp_c_read(f);
     return plisp_cons(
         make_interned_symbol(sym),
         plisp_cons(
@@ -185,7 +185,7 @@ plisp_t plisp_read_hash(FILE *f) {
 }
 */
 
-plisp_t plisp_read(FILE *f) {
+plisp_t plisp_c_read(FILE *f) {
     int ch;
     do {
         ch = fgetc(f);

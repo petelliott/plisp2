@@ -136,3 +136,9 @@ const char *plisp_string_value(plisp_t str) {
     struct plisp_vector *strptr = (void *) (str & ~LOTAGS);
     return strptr->vec;
 }
+
+size_t plisp_c_stringlen(plisp_t str) {
+    assert(plisp_c_stringp(str));
+    struct plisp_vector *strptr = (void *) (str & ~LOTAGS);
+    return strptr->len - 1;
+}

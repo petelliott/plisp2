@@ -89,5 +89,6 @@ plisp_t plisp_vector_ref(plisp_t vec, size_t idx);
 bool plisp_c_stringp(plisp_t val);
 plisp_t plisp_make_string(const char *string);
 const char *plisp_string_value(plisp_t str);
+size_t plisp_c_stringlen(plisp_t str);
 
 #endif

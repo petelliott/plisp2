@@ -8,6 +8,6 @@ void plisp_init_reader(void);
 
 plisp_t plisp_intern(plisp_t sym);
 
-plisp_t plisp_read(FILE *f);
+plisp_t plisp_c_read(FILE *f);
 
 #endif
