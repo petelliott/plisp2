@@ -3,13 +3,6 @@
 #include <assert.h>
 #include <string.h>
 
-plisp_t plisp_alloc_atomic(size_t len, uintptr_t tags) {
-    void *memptr = NULL;
-    // TODO: garbage collection
-    posix_memalign(&memptr, sizeof(struct plisp_cons), len);
-    return ((plisp_t) memptr) | tags;
-}
-
 #define MAX_ALLOC_PAGE_SIZE 2048
 
 struct obj_allocs {

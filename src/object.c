@@ -2,6 +2,7 @@
 #include <plisp/gc.h>
 #include <assert.h>
 #include <string.h>
+#include <stdlib.h>
 
 bool plisp_c_fixnump(plisp_t val) {
     return (val & LOTAGS) == LT_FIXNUM;
@@ -44,7 +45,7 @@ char plisp_char_value(plisp_t val) {
 }
 
 bool plisp_c_consp(plisp_t val) {
-    return (val & LOTAGS) == LT_CONS;
+    return ((val & LOTAGS) == LT_CONS) && (val != plisp_nil());
 }
 
 plisp_t plisp_cons(plisp_t car, plisp_t cdr) {
@@ -81,13 +82,61 @@ bool plisp_c_symbolp(plisp_t val) {
 }
 
 plisp_t plisp_make_symbol(const char *string) {
-    size_t len = strlen(string);
-    plisp_t sym = plisp_alloc_atomic(len+1, LT_SYM);
-    char *symptr = (void *) (sym & ~LOTAGS);
-    strncpy(symptr, string, len+1);
-    return sym;
+    plisp_t str = plisp_make_string(string);
+    return (str & ~LOTAGS) | LT_SYM;
 }
 
-const char *plisp_symbol_value(plisp_t val) {
-    return (void *) (val & ~LOTAGS);
+plisp_t plisp_symbol_name(plisp_t val) {
+    assert(plisp_c_symbolp(val));
+    return (val & ~LOTAGS) | LT_STRING;
+}
+
+bool plisp_c_vectorp(plisp_t val) {
+    return (val & LOTAGS) == LT_VECTOR;
+}
+
+plisp_t plisp_make_vector(enum plisp_vec_type type, uint8_t
+                          elem_width, uint16_t flags, uint32_t len,
+                          plisp_t initial_element, bool use_ie) {
+
+    plisp_t vector = plisp_alloc_obj(LT_VECTOR);
+    struct plisp_vector *vecptr = (void *) (vector & ~LOTAGS);
+
+    vecptr->type       = type;
+    vecptr->elem_width = elem_width;
+    vecptr->flags      = flags;
+    vecptr->len        = len;
+    vecptr->vec        = malloc(len * elem_width);
+
+    if (use_ie) {
+        //TODO: cases for types
+    }
+
+    return vector;
+}
+
+plisp_t plisp_vector_ref(plisp_t vec, size_t idx) {
+    //TODO ref vectors
+    return plisp_nil();
+}
+
+bool plisp_c_stringp(plisp_t val) {
+    return (val & LOTAGS) == LT_STRING;
+}
+
+plisp_t plisp_make_string(const char *string) {
+    size_t len = strlen(string);
+    plisp_t str = plisp_make_vector(VEC_CHAR, 0, VFLAG_IMMUTABLE, len+1,
+                                    plisp_nil(), false);
+    str = (str & ~LOTAGS) | LT_STRING;
+    struct plisp_vector *strptr = (void *) (str & ~LOTAGS);
+    strncpy(strptr->vec, string, len+1);
+
+    return str;
+}
+
+const char *plisp_string_value(plisp_t str) {
+    assert(plisp_c_stringp(str));
+    struct plisp_vector *strptr = (void *) (str & ~LOTAGS);
+    return strptr->vec;
 }
