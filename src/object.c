@@ -142,3 +142,25 @@ size_t plisp_c_stringlen(plisp_t str) {
     struct plisp_vector *strptr = (void *) (str & ~LOTAGS);
     return strptr->len - 1;
 }
+
+bool plisp_c_customp(plisp_t val) {
+    return (val & LOTAGS) == LT_CUSTOM;
+}
+
+plisp_t plisp_make_custom(plisp_t typesym, void *data) {
+    plisp_t custom = plisp_alloc_obj(LT_CUSTOM);
+    struct plisp_custom *customptr = (void *) (custom & ~LOTAGS);
+    customptr->typesym = typesym;
+    customptr->data = data;
+    return custom;
+}
+
+plisp_t plisp_custom_typesym(plisp_t val) {
+    struct plisp_custom *customptr = (void *) (val & ~LOTAGS);
+    return customptr->typesym;
+}
+
+void *plisp_custom_data(plisp_t val) {
+    struct plisp_custom *customptr = (void *) (val & ~LOTAGS);
+    return customptr->data;
+}

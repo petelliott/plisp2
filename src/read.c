@@ -3,8 +3,20 @@
 #include <stdlib.h>
 #include <Judy.h>
 
+static plisp_t make_interned_symbol(const char *text);
+
 // Judy's API makes no sense
 static Pvoid_t intern_table = NULL;
+
+plisp_t plisp_eof = plisp_nil;
+
+bool plisp_c_eofp(plisp_t obj) {
+    return obj == plisp_eof;
+}
+
+void plisp_init_reader(void) {
+    plisp_eof = plisp_make_custom(make_interned_symbol("eof"), NULL);
+}
 
 plisp_t plisp_intern(plisp_t sym) {
     const unsigned char *key = (const unsigned char *)
@@ -29,7 +41,7 @@ static plisp_t plisp_read_list(FILE *f) {
 
     if (ch == EOF) {
         fprintf(stderr, "error while parsing list: unexpected EOF\n");
-        return plisp_nil;
+        return plisp_eof;
     }
 
     if (ch == ')') {
@@ -44,6 +56,7 @@ static plisp_t plisp_read_list(FILE *f) {
             if (ch == EOF) {
                 fprintf(stderr, "error while parsing cons cell: "
                         "expected ')', got EOF\n");
+                return plisp_eof;
             } else {
                 fprintf(stderr, "error while parsing cons cell: "
                         "expected ')', got '%c'\n", ch);
@@ -107,7 +120,7 @@ static plisp_t plisp_read_string(FILE *f) {
     while ((ch = fgetc(f)) != '"') {
         if (ch == EOF) {
             fprintf(stderr, "error while parsing string: unexpected EOF\n");
-            return plisp_nil;
+            return plisp_eof;
         }
         if (ch == '\\') {
             ch = read_escape(f);
@@ -201,7 +214,7 @@ plisp_t plisp_c_read(FILE *f) {
     } while (isspace(ch));
 
     if (ch == EOF) {
-        return plisp_nil;
+        return plisp_eof;
     }
 
     if (ch == '(') {

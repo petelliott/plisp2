@@ -6,6 +6,7 @@
 
 
 int main(int argc, char *argv[]) {
+    plisp_init_reader();
 
     assert(plisp_intern(plisp_make_symbol("abcd"))
            == plisp_intern(plisp_make_symbol("abcd")));
@@ -21,6 +22,10 @@ int main(int argc, char *argv[]) {
         while (1) {
             printf("> ");
             plisp_t obj = plisp_c_read(stdin);
+            if (plisp_c_eofp(obj)) {
+                putchar('\n');
+                break;
+            }
             plisp_c_write(stdout, obj);
             putchar('\n');
         }

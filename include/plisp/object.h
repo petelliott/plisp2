@@ -12,7 +12,7 @@ enum plisp_lotag {
     LT_FIXNUM = 0, // 60 bit signed integer
     LT_HITAGS = 1,
     LT_CONS   = 2,
-    LT_OBJ    = 3,
+    LT_CUSTOM = 3,
     LT_CLOS   = 4,
     LT_SYM    = 5,
     LT_VECTOR = 6,
@@ -90,5 +90,15 @@ bool plisp_c_stringp(plisp_t val);
 plisp_t plisp_make_string(const char *string);
 const char *plisp_string_value(plisp_t str);
 size_t plisp_c_stringlen(plisp_t str);
+
+struct plisp_custom {
+    plisp_t typesym; // symbol that uniquely identifies the object
+    void *data; // must be freeable
+};
+
+bool plisp_c_customp(plisp_t val);
+plisp_t plisp_make_custom(plisp_t typesym, void *data);
+plisp_t plisp_custom_typesym(plisp_t val);
+void *plisp_custom_data(plisp_t val);
 
 #endif
