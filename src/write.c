@@ -62,7 +62,7 @@ void plisp_c_write(FILE *f, plisp_t obj) {
     } else if (plisp_c_symbolp(obj)) {
         fprintf(f, "%s", plisp_string_value(plisp_symbol_name(obj)));
     } else if (plisp_c_nullp(obj)) {
-        fprintf(f, "nil");
+        fprintf(f, "()");
     } else {
         fprintf(f, "#?");
     }
