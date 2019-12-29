@@ -2,6 +2,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <Judy.h>
+#include <plisp/gc.h>
 
 static plisp_t make_interned_symbol(const char *text);
 
@@ -16,6 +17,7 @@ bool plisp_c_eofp(plisp_t obj) {
 
 void plisp_init_reader(void) {
     plisp_eof = plisp_make_custom(make_interned_symbol("eof"), NULL);
+    plisp_gc_permanent(plisp_eof);
 }
 
 plisp_t plisp_intern(plisp_t sym) {
@@ -29,6 +31,7 @@ plisp_t plisp_intern(plisp_t sym) {
 
     JSLI(val, intern_table, key);
     *val = sym;
+    plisp_gc_permanent(sym);
 
     return sym;
 }
