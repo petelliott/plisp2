@@ -1,12 +1,14 @@
 #include <plisp/object.h>
 #include <plisp/read.h>
 #include <plisp/write.h>
+#include <plisp/compile.h>
 #include <stdio.h>
 #include <assert.h>
 
 
 int main(int argc, char *argv[]) {
     plisp_init_reader();
+    plisp_init_compiler(argv[0]);
 
     assert(plisp_intern(plisp_make_symbol("abcd"))
            == plisp_intern(plisp_make_symbol("abcd")));
@@ -31,6 +33,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    plisp_end_compiler();
 
     return 0;
 }

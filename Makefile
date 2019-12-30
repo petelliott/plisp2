@@ -1,7 +1,8 @@
 CC=gcc
 CFLAGS=-Wall -O2 -Iinclude/
-LIBS=-lJudy
-OBJS=bin/object.o bin/gc.o bin/main.o bin/read.o bin/write.o
+LIBS=-lJudy -llightning
+OBJS=bin/object.o bin/gc.o bin/main.o bin/read.o bin/write.o \
+	bin/compile.o
 
 plisp: $(OBJS)
 	$(CC) $(CFLAGS) $^ -o $@ $(LIBS)

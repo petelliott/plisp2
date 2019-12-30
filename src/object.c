@@ -73,6 +73,31 @@ bool plisp_c_nullp(plisp_t val) {
     return val == (0lu | LT_CONS);
 }
 
+bool plisp_c_closurep(plisp_t val) {
+    return (val & LOTAGS) == LT_CLOS;
+}
+
+plisp_t plisp_make_closure(struct plisp_closure_data *data, plisp_fn_t fun) {
+    plisp_t closure = plisp_alloc_obj(LT_CLOS);
+    struct plisp_closure *clptr = (void *) (closure & ~LOTAGS);
+    clptr->data = data;
+    clptr->fun = fun;
+
+    return closure;
+}
+
+struct plisp_closure_data *plisp_closure_data(plisp_t closure) {
+    assert(plisp_c_symbolp(closure));
+    struct plisp_closure *clptr = (void *) (closure & ~LOTAGS);
+    return clptr->data;
+}
+
+plisp_fn_t plisp_closure_fun(plisp_t closure) {
+    assert(plisp_c_symbolp(closure));
+    struct plisp_closure *clptr = (void *) (closure & ~LOTAGS);
+    return clptr->fun;
+}
+
 bool plisp_c_symbolp(plisp_t val) {
     return (val & LOTAGS) == LT_SYM;
 }
