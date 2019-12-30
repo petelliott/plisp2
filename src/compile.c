@@ -11,9 +11,7 @@ static plisp_t plus_sym;
 void plisp_init_compiler(char *argv0) {
     init_jit(argv0);
     lambda_sym = plisp_intern(plisp_make_symbol("lambda"));
-    plisp_gc_permanent(lambda_sym);
-    lambda_sym = plisp_intern(plisp_make_symbol("+"));
-    plisp_gc_permanent(plus_sym);
+    plus_sym = plisp_intern(plisp_make_symbol("+"));
 }
 
 void plisp_end_compiler(void) {
@@ -79,6 +77,9 @@ plisp_fn_t plisp_compile_lambda(plisp_t lambda) {
         plisp_compile_expr(_jit, plisp_car(exprlist), &arg_table);
     }
     jit_retr(JIT_R0);
+
+    size_t Rc_word;
+    JLFA(Rc_word, arg_table);
 
     plisp_fn_t fun = jit_emit();
     jit_clear_state();

@@ -2,6 +2,7 @@
 #include <plisp/read.h>
 #include <plisp/write.h>
 #include <plisp/compile.h>
+#include <plisp/toplevel.h>
 #include <stdio.h>
 #include <assert.h>
 
@@ -9,9 +10,8 @@
 int main(int argc, char *argv[]) {
     plisp_init_reader();
     plisp_init_compiler(argv[0]);
+    plisp_init_toplevel();
 
-    assert(plisp_intern(plisp_make_symbol("abcd"))
-           == plisp_intern(plisp_make_symbol("abcd")));
     if (argc > 1) {
         /*
         FILE *file = fopen(argv[1], "r");
@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
                 putchar('\n');
                 break;
             }
-            plisp_c_write(stdout, obj);
+            plisp_c_write(stdout, plisp_toplevel_eval(obj));
             putchar('\n');
         }
     }
