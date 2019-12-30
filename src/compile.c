@@ -32,7 +32,7 @@ static void plisp_compile_plus(jit_state_t *_jit, plisp_t expr,
         int save = jit_allocai(sizeof(plisp_t));
         jit_stxi(save, JIT_FP, JIT_R0);
         plisp_compile_expr(_jit, plisp_car(numlist), arg_table);
-        jit_ldxi(save, JIT_FP, JIT_R1);
+        jit_ldxi(JIT_R1, JIT_FP, save);
         jit_addr(JIT_R0, JIT_R0, JIT_R1);
     }
 }
@@ -76,6 +76,7 @@ plisp_fn_t plisp_compile_lambda(plisp_t lambda) {
 
         plisp_compile_expr(_jit, plisp_car(exprlist), &arg_table);
     }
+    //jit_movi(JIT_R0, plisp_nil);
     jit_retr(JIT_R0);
 
     size_t Rc_word;

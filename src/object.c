@@ -87,13 +87,13 @@ plisp_t plisp_make_closure(struct plisp_closure_data *data, plisp_fn_t fun) {
 }
 
 struct plisp_closure_data *plisp_closure_data(plisp_t closure) {
-    assert(plisp_c_symbolp(closure));
+    assert(plisp_c_closurep(closure));
     struct plisp_closure *clptr = (void *) (closure & ~LOTAGS);
     return clptr->data;
 }
 
 plisp_fn_t plisp_closure_fun(plisp_t closure) {
-    assert(plisp_c_symbolp(closure));
+    assert(plisp_c_closurep(closure));
     struct plisp_closure *clptr = (void *) (closure & ~LOTAGS);
     return clptr->fun;
 }
