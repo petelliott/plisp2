@@ -4,7 +4,9 @@
 #include <plisp/read.h>
 #include <plisp/gc.h>
 #include <plisp/toplevel.h>
+#include <plisp/builtin.h>
 #include <assert.h>
+#include <stdio.h>
 
 static plisp_t lambda_sym;
 static plisp_t if_sym;
@@ -49,7 +51,17 @@ static void pop(struct lambda_state *_state, int reg) {
 }
 
 static void assert_is_closure(plisp_t clos) {
+    if (!plisp_c_closurep(clos)) {
+        fprintf(stderr, "error: attempt to call non-closure object\n");
+    }
     assert(plisp_c_closurep(clos));
+}
+
+static void assert_nargs(size_t expected, size_t got) {
+    if (expected != got) {
+        fprintf(stderr, "error: expected %lu args, got %lu\n", expected, got);
+    }
+    assert(expected == got);
 }
 
 static void plisp_compile_expr(struct lambda_state *_state, plisp_t expr);
@@ -156,8 +168,9 @@ plisp_fn_t plisp_compile_lambda(plisp_t lambda) {
 
     jit_prolog();
 
-    //skip number of args for now
-    jit_arg();
+    jit_getarg(JIT_R0, jit_arg());
+    int nargs = push(_state, JIT_R0);
+
     for (plisp_t arglist = plisp_car(plisp_cdr(lambda));
          arglist != plisp_nil; arglist = plisp_cdr(arglist)) {
 
@@ -166,7 +179,16 @@ plisp_fn_t plisp_compile_lambda(plisp_t lambda) {
 
         jit_getarg(JIT_R0, jit_arg());
         *pval = push(_state, JIT_R0);
+
     }
+
+
+    // assert that the right number of arguments were passed
+    jit_ldxi(JIT_R0, JIT_FP, nargs);
+    jit_prepare();
+    jit_pushargi(plisp_c_length(plisp_car(plisp_cdr(lambda))));
+    jit_pushargr(JIT_R0);
+    jit_finishi(assert_nargs);
 
     for (plisp_t exprlist = plisp_cdr(plisp_cdr(lambda));
          exprlist != plisp_nil; exprlist = plisp_cdr(exprlist)) {

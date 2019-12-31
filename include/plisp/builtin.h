@@ -21,4 +21,7 @@ plisp_t plisp_builtin_not(size_t nargs, plisp_t obj);
 plisp_t plisp_builtin_nullp(size_t nargs, plisp_t obj);
 plisp_t plisp_builtin_eq(size_t nargs, plisp_t a, plisp_t b);
 
+size_t plisp_c_length(plisp_t lst);
+plisp_t plisp_builtin_length(size_t nargs, plisp_t lst);
+
 #endif

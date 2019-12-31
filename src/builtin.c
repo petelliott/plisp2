@@ -25,6 +25,8 @@ void plisp_init_builtin(void) {
     plisp_define_builtin("null?", plisp_builtin_nullp);
     plisp_define_builtin("eq?", plisp_builtin_eq);
 
+    plisp_define_builtin("length", plisp_builtin_length);
+
     #pragma GCC diagnostic pop
 }
 
@@ -131,4 +133,19 @@ plisp_t plisp_builtin_nullp(size_t nargs, plisp_t obj) {
 plisp_t plisp_builtin_eq(size_t nargs, plisp_t a, plisp_t b) {
     assert(nargs == 2);
     return plisp_make_bool(a == b);
+}
+
+size_t plisp_c_length(plisp_t lst) {
+    assert(plisp_c_consp(lst) || plisp_c_nullp(lst));
+
+    if (plisp_c_nullp(lst)) {
+        return 0;
+    }
+
+    return 1 + plisp_c_length(plisp_cdr(lst));
+}
+
+plisp_t plisp_builtin_length(size_t nargs, plisp_t lst) {
+    assert(nargs == 1);
+    return plisp_make_fixnum(plisp_c_length(lst));
 }
