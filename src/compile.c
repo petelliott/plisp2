@@ -39,9 +39,23 @@ static void plisp_compile_plus(jit_state_t *_jit, plisp_t expr,
 
 static void plisp_compile_call(jit_state_t *_jit, plisp_t expr,
                                Pvoid_t *arg_table) {
-    jit_prepare();
-    //TODO: functions with args
+    int args[128];
+    int nargs = 0;
+    for (plisp_t numlist = plisp_cdr(plisp_cdr(expr));
+         numlist != plisp_nil; numlist = plisp_cdr(numlist)) {
+        //TODO: register allocation
+        int save = jit_allocai(sizeof(plisp_t));
+        plisp_compile_expr(_jit, plisp_car(numlist), arg_table);
+        jit_stxi(save, JIT_FP, JIT_R0);
+        args[nargs++] = save;
+    }
     plisp_compile_expr(_jit, plisp_car(expr), arg_table);
+
+    jit_prepare();
+    for (int i = 0; i < nargs; ++i) {
+        jit_ldxi(JIT_R1, JIT_FP, args[i]);
+        jit_pushargr(JIT_R1);
+    }
     // inline closure call (change whenever plisp_closure changes)
     jit_andi(JIT_R0, JIT_R0, ~LOTAGS);
     jit_ldxi(JIT_R0, JIT_R0, sizeof(struct plisp_closure_data *));
@@ -63,12 +77,12 @@ static void plisp_compile_expr(jit_state_t *_jit, plisp_t expr,
             jit_retval(JIT_R0);
         } else {
             plisp_compile_call(_jit, expr, arg_table);
-            //assert(false); //TODO: function calls
         }
     } else if (plisp_c_symbolp(expr)) {
         jit_node_t **pval;
-        JLG(pval, arg_table, expr);
+        JLG(pval, *arg_table, expr);
         assert(pval != NULL);
+        assert(pval != PJERR);
         jit_getarg(JIT_R0, *pval);
     } else {
         jit_movi(JIT_R0, expr);
@@ -104,6 +118,8 @@ plisp_fn_t plisp_compile_lambda(plisp_t lambda) {
 
     plisp_fn_t fun = jit_emit();
     jit_clear_state();
+
+    jit_disassemble();
 
     return fun;
 }
