@@ -8,11 +8,13 @@
 
 static plisp_t lambda_sym;
 static plisp_t if_sym;
+static plisp_t quote_sym;
 
 void plisp_init_compiler(char *argv0) {
     init_jit(argv0);
     lambda_sym = plisp_intern(plisp_make_symbol("lambda"));
     if_sym = plisp_intern(plisp_make_symbol("if"));
+    quote_sym = plisp_intern(plisp_make_symbol("quote"));
 }
 
 void plisp_end_compiler(void) {
@@ -101,6 +103,12 @@ static void plisp_compile_expr(struct lambda_state *_state, plisp_t expr) {
             jit_retval(JIT_R0);
         } else if (plisp_car(expr) == if_sym) {
             plisp_compile_if(_state, expr);
+        } else if (plisp_car(expr) == quote_sym) {
+            plisp_t obj = plisp_car(plisp_cdr(expr));
+            if (plisp_heap_allocated(obj)) {
+                plisp_gc_permanent(obj);
+            }
+            jit_movi(JIT_R0, obj);
         } else {
             plisp_compile_call(_state, expr);
         }
