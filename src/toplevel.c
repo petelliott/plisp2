@@ -32,12 +32,27 @@ plisp_t *plisp_toplevel_ref(plisp_t sym) {
 }
 
 static plisp_t do_define(plisp_t form) {
-    //TODO function defines
-    plisp_toplevel_define(
-        plisp_car(plisp_cdr(form)),
-        plisp_toplevel_eval(
-            plisp_car(plisp_cdr(plisp_cdr(form)))));
-    return plisp_car(plisp_cdr(form));
+    if (plisp_c_consp(plisp_car(plisp_cdr(form)))) {
+        // function define
+        plisp_toplevel_define(
+            plisp_car(plisp_car(plisp_cdr(form))),
+            plisp_toplevel_eval(
+                plisp_cons(
+                    lambda_sym,
+                    plisp_cons(
+                        plisp_cdr(plisp_car(plisp_cdr(form))),
+                        plisp_cdr(plisp_cdr(form))))));
+
+        return plisp_car(plisp_car(plisp_cdr(form)));
+    } else {
+        // value define
+        plisp_toplevel_define(
+            plisp_car(plisp_cdr(form)),
+            plisp_toplevel_eval(
+                plisp_car(plisp_cdr(plisp_cdr(form)))));
+        return plisp_car(plisp_cdr(form));
+    }
+
 }
 
 plisp_t plisp_toplevel_eval(plisp_t form) {
