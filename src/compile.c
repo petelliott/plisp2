@@ -63,6 +63,7 @@ static void plisp_compile_call(struct lambda_state *_state, plisp_t expr) {
 
     jit_note(__FILE__, __LINE__);
     jit_prepare();
+    jit_pushargi(nargs);
     for (int i = 0; i < nargs; ++i) {
         jit_ldxi(JIT_R1, JIT_FP, args[i]);
         jit_pushargr(JIT_R1);
@@ -141,6 +142,9 @@ plisp_fn_t plisp_compile_lambda(plisp_t lambda) {
     assert(plisp_car(lambda) == lambda_sym);
 
     jit_prolog();
+
+    //skip number of args for now
+    jit_arg();
     for (plisp_t arglist = plisp_car(plisp_cdr(lambda));
          arglist != plisp_nil; arglist = plisp_cdr(arglist)) {
 
