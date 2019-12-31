@@ -7,11 +7,13 @@
 
 static plisp_t lambda_sym;
 static plisp_t plus_sym;
+static plisp_t if_sym;
 
 void plisp_init_compiler(char *argv0) {
     init_jit(argv0);
     lambda_sym = plisp_intern(plisp_make_symbol("lambda"));
     plus_sym = plisp_intern(plisp_make_symbol("+"));
+    if_sym = plisp_intern(plisp_make_symbol("if"));
 }
 
 void plisp_end_compiler(void) {
@@ -89,6 +91,20 @@ static void plisp_compile_call(struct lambda_state *_state, plisp_t expr) {
     jit_note(__FILE__, __LINE__);
 }
 
+static void plisp_compile_if(struct lambda_state *_state, plisp_t expr) {
+    // get condition into R0
+    plisp_compile_expr(_state, plisp_car(plisp_cdr(expr)));
+
+    jit_node_t *cond = jit_beqi(JIT_R0, plisp_make_bool(false));
+    plisp_compile_expr(_state, plisp_car(plisp_cdr(plisp_cdr(expr))));
+    jit_node_t *rest = jit_jmpi();
+    jit_patch(cond);
+    plisp_compile_expr(_state,
+                       plisp_car(plisp_cdr
+                                 (plisp_cdr(plisp_cdr(expr)))));
+    jit_patch(rest);
+}
+
 static void plisp_compile_expr(struct lambda_state *_state, plisp_t expr) {
     if (plisp_c_consp(expr)) {
         if (plisp_car(expr) == plus_sym) {
@@ -100,6 +116,8 @@ static void plisp_compile_expr(struct lambda_state *_state, plisp_t expr) {
             jit_pushargi((jit_word_t) fun);
             jit_finishi(plisp_make_closure);
             jit_retval(JIT_R0);
+        } else if (plisp_car(expr) == if_sym) {
+            plisp_compile_if(_state, expr);
         } else {
             plisp_compile_call(_state, expr);
         }

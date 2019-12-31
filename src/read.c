@@ -11,6 +11,9 @@ static Pvoid_t intern_table = NULL;
 
 plisp_t plisp_eof = plisp_nil;
 
+static plisp_t fsym;
+static plisp_t tsym;
+
 bool plisp_c_eofp(plisp_t obj) {
     return obj == plisp_eof;
 }
@@ -18,6 +21,8 @@ bool plisp_c_eofp(plisp_t obj) {
 void plisp_init_reader(void) {
     plisp_eof = plisp_make_custom(make_interned_symbol("eof"), NULL);
     plisp_gc_permanent(plisp_eof);
+    fsym = make_interned_symbol("f");
+    tsym = make_interned_symbol("t");
 }
 
 plisp_t plisp_intern(plisp_t sym) {
@@ -195,20 +200,17 @@ plisp_t plisp_read_call(FILE *f, const char *sym) {
             plisp_nil));
 }
 
-/*
-TODO
 plisp_t plisp_read_hash(FILE *f) {
-    plisp_t *sym = plisp_read_symbol(f);
+    plisp_t sym = plisp_read_symbol(f);
 
-    if (plisp_c_eq(sym, fsym)) {
+    if (sym == fsym) {
         return plisp_make_bool(false);
-    } else if (plisp_c_eq(sym, tsym)) {
+    } else if (sym == tsym) {
         return plisp_make_bool(true);
     }
 
-    return NULL;
+    return plisp_nil;
 }
-*/
 
 plisp_t plisp_c_read(FILE *f) {
     int ch;
@@ -231,8 +233,7 @@ plisp_t plisp_c_read(FILE *f) {
     } else if (ch == ',') {
         return plisp_read_call(f, "unquote");
     } else if (ch == '#') {
-        //return plisp_read_hash(f);
-        return plisp_nil;
+        return plisp_read_hash(f);
     } else if (isdigit(ch)) {
         ungetc(ch, f);
         return plisp_read_number(f);
