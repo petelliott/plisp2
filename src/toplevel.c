@@ -16,18 +16,19 @@ void plisp_init_toplevel(void) {
 }
 
 void plisp_toplevel_define(plisp_t sym, plisp_t value) {
-    plisp_t *pval;
-    JLI(pval, toplevel_scope, sym);
-    *pval = value;
-    if (plisp_heap_allocated(value)) {
-        plisp_gc_permanent(value);
-    }
+    *plisp_toplevel_ref(sym) = value;
 }
 
 plisp_t *plisp_toplevel_ref(plisp_t sym) {
     plisp_t *pval;
     JLG(pval, toplevel_scope, sym);
-    return pval;
+    if (pval == NULL) {
+        plisp_t box = plisp_make_consbox(plisp_nil);
+        plisp_gc_permanent(box);
+        JLI(pval, toplevel_scope, sym);
+        *pval = box;
+    }
+    return plisp_get_consbox(*pval);
 }
 
 static plisp_t do_define(plisp_t form) {

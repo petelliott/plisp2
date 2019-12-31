@@ -119,4 +119,7 @@ plisp_t plisp_make_custom(plisp_t typesym, void *data);
 plisp_t plisp_custom_typesym(plisp_t val);
 void *plisp_custom_data(plisp_t val);
 
+plisp_t plisp_make_consbox(plisp_t val);
+plisp_t *plisp_get_consbox(plisp_t consbox);
+
 #endif

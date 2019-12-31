@@ -189,3 +189,17 @@ void *plisp_custom_data(plisp_t val) {
     struct plisp_custom *customptr = (void *) (val & ~LOTAGS);
     return customptr->data;
 }
+
+/*
+to avoid using another type, boxed pointer are a cons cell
+with the cdr nil. these are used internally for mutable closures.
+*/
+
+plisp_t plisp_make_consbox(plisp_t val) {
+    return plisp_cons(val, plisp_nil);
+}
+
+plisp_t *plisp_get_consbox(plisp_t consbox) {
+    struct plisp_cons *cellptr = (void *) (consbox & ~LOTAGS);
+    return &(cellptr->car);
+}

@@ -3,6 +3,7 @@
 #include <Judy.h>
 #include <plisp/read.h>
 #include <plisp/gc.h>
+#include <plisp/toplevel.h>
 #include <assert.h>
 
 static plisp_t lambda_sym;
@@ -124,9 +125,13 @@ static void plisp_compile_expr(struct lambda_state *_state, plisp_t expr) {
     } else if (plisp_c_symbolp(expr)) {
         int *pval;
         JLG(pval, _state->arg_table, expr);
-        assert(pval != NULL);
-        assert(pval != PJERR);
-        jit_ldxi(JIT_R0, JIT_FP, *pval);
+        if (pval != NULL) {
+            jit_ldxi(JIT_R0, JIT_FP, *pval);
+            return;
+        }
+
+        plisp_t *tl_slot = plisp_toplevel_ref(expr);
+        jit_ldi(JIT_R0, tl_slot);
     } else {
         jit_movi(JIT_R0, expr);
     }
