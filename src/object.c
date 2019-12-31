@@ -14,7 +14,7 @@ plisp_t plisp_make_fixnum(int64_t val) {
 
 int64_t plisp_fixnum_value(plisp_t val) {
     assert(plisp_c_fixnump(val));
-    return val >> LOSHIFT;
+    return ((int64_t) val) >> LOSHIFT;
 }
 
 bool plisp_c_boolp(plisp_t val) {

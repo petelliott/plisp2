@@ -7,13 +7,11 @@
 #include <assert.h>
 
 static plisp_t lambda_sym;
-static plisp_t plus_sym;
 static plisp_t if_sym;
 
 void plisp_init_compiler(char *argv0) {
     init_jit(argv0);
     lambda_sym = plisp_intern(plisp_make_symbol("lambda"));
-    plus_sym = plisp_intern(plisp_make_symbol("+"));
     if_sym = plisp_intern(plisp_make_symbol("if"));
 }
 
@@ -49,20 +47,6 @@ static void pop(struct lambda_state *_state, int reg) {
 }
 
 static void plisp_compile_expr(struct lambda_state *_state, plisp_t expr);
-
-static void plisp_compile_plus(struct lambda_state *_state, plisp_t expr) {
-
-    plisp_compile_expr(_state, plisp_car(plisp_cdr(expr)));
-
-    for (plisp_t numlist = plisp_cdr(plisp_cdr(expr));
-         numlist != plisp_nil; numlist = plisp_cdr(numlist)) {
-
-        push(_state, JIT_R0);
-        plisp_compile_expr(_state, plisp_car(numlist));
-        pop(_state, JIT_R1);
-        jit_addr(JIT_R0, JIT_R0, JIT_R1);
-    }
-}
 
 static void plisp_compile_call(struct lambda_state *_state, plisp_t expr) {
     int args[128];
@@ -108,9 +92,7 @@ static void plisp_compile_if(struct lambda_state *_state, plisp_t expr) {
 
 static void plisp_compile_expr(struct lambda_state *_state, plisp_t expr) {
     if (plisp_c_consp(expr)) {
-        if (plisp_car(expr) == plus_sym) {
-            plisp_compile_plus(_state, expr);
-        } else if (plisp_car(expr) == lambda_sym) {
+        if (plisp_car(expr) == lambda_sym) {
             plisp_fn_t fun = plisp_compile_lambda(expr);
             jit_prepare();
             jit_pushargi((jit_word_t) NULL);
