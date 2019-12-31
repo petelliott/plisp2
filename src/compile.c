@@ -37,13 +37,33 @@ static void plisp_compile_plus(jit_state_t *_jit, plisp_t expr,
     }
 }
 
+static void plisp_compile_call(jit_state_t *_jit, plisp_t expr,
+                               Pvoid_t *arg_table) {
+    jit_prepare();
+    //TODO: functions with args
+    plisp_compile_expr(_jit, plisp_car(expr), arg_table);
+    // inline closure call (change whenever plisp_closure changes)
+    jit_andi(JIT_R0, JIT_R0, ~LOTAGS);
+    jit_ldxi(JIT_R0, JIT_R0, sizeof(struct plisp_closure_data *));
+    jit_finishr(JIT_R0);
+    jit_retval(JIT_R0);
+}
+
 static void plisp_compile_expr(jit_state_t *_jit, plisp_t expr,
                                Pvoid_t *arg_table) {
     if (plisp_c_consp(expr)) {
         if (plisp_car(expr) == plus_sym) {
             plisp_compile_plus(_jit, expr, arg_table);
+        } else if (plisp_car(expr) == lambda_sym) {
+            plisp_fn_t fun = plisp_compile_lambda(expr);
+            jit_prepare();
+            jit_pushargi((jit_word_t) NULL);
+            jit_pushargi((jit_word_t) fun);
+            jit_finishi(plisp_make_closure);
+            jit_retval(JIT_R0);
         } else {
-            assert(false); //TODO: function calls
+            plisp_compile_call(_jit, expr, arg_table);
+            //assert(false); //TODO: function calls
         }
     } else if (plisp_c_symbolp(expr)) {
         jit_node_t **pval;

@@ -63,6 +63,9 @@ void plisp_c_write(FILE *f, plisp_t obj) {
         fprintf(f, "%s", plisp_string_value(plisp_symbol_name(obj)));
     } else if (plisp_c_nullp(obj)) {
         fprintf(f, "()");
+
+    } else if (plisp_c_closurep(obj)) {
+        fprintf(f, "#<compiled closure>");
     } else {
         fprintf(f, "#?");
     }
