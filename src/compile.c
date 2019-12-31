@@ -48,6 +48,10 @@ static void pop(struct lambda_state *_state, int reg) {
     _state->stack_cur += sizeof(plisp_t);
 }
 
+static void assert_is_closure(plisp_t clos) {
+    assert(plisp_c_closurep(clos));
+}
+
 static void plisp_compile_expr(struct lambda_state *_state, plisp_t expr);
 
 static void plisp_compile_call(struct lambda_state *_state, plisp_t expr) {
@@ -59,7 +63,16 @@ static void plisp_compile_call(struct lambda_state *_state, plisp_t expr) {
         plisp_compile_expr(_state, plisp_car(arglist));
         args[nargs++] = push(_state, JIT_R0);
     }
+
     plisp_compile_expr(_state, plisp_car(expr));
+    push(_state, JIT_R0);
+
+    // assert that we are calling a closure
+    jit_prepare();
+    jit_pushargr(JIT_R0);
+    jit_finishi(assert_is_closure);
+
+    pop(_state, JIT_R0);
 
     jit_note(__FILE__, __LINE__);
     jit_prepare();
