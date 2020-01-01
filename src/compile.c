@@ -7,6 +7,7 @@
 #include <plisp/builtin.h>
 #include <assert.h>
 #include <stdio.h>
+#include <stdarg.h>
 
 static plisp_t lambda_sym;
 static plisp_t if_sym;
@@ -62,6 +63,13 @@ static void assert_nargs(size_t expected, size_t got) {
         fprintf(stderr, "error: expected %lu args, got %lu\n", expected, got);
     }
     assert(expected == got);
+}
+
+static void assert_gt_nargs(size_t expected, size_t got) {
+    if (expected > got) {
+        fprintf(stderr, "error: expected >=%lu args, got %lu\n", expected, got);
+    }
+    assert(expected <= got);
 }
 
 static void plisp_compile_expr(struct lambda_state *_state, plisp_t expr);
@@ -153,6 +161,16 @@ static void plisp_compile_expr(struct lambda_state *_state, plisp_t expr) {
     }
 }
 
+static plisp_t va_to_list(size_t nargs, va_list args) {
+
+    plisp_t lst = plisp_nil;
+    for (size_t i = 0; i < nargs; ++i) {
+        lst = plisp_cons(va_arg(args, plisp_t), lst);
+    }
+
+    return plisp_c_reverse(lst);
+}
+
 plisp_fn_t plisp_compile_lambda(plisp_t lambda) {
     // maps argument names to nodes
     struct lambda_state state = {
@@ -171,8 +189,11 @@ plisp_fn_t plisp_compile_lambda(plisp_t lambda) {
     jit_getarg(JIT_R0, jit_arg());
     int nargs = push(_state, JIT_R0);
 
-    for (plisp_t arglist = plisp_car(plisp_cdr(lambda));
-         arglist != plisp_nil; arglist = plisp_cdr(arglist)) {
+    int real_nargs = 0;
+
+    plisp_t arglist;
+    for (arglist = plisp_car(plisp_cdr(lambda));
+         plisp_c_consp(arglist); arglist = plisp_cdr(arglist)) {
 
         int *pval;
         JLI(pval, _state->arg_table, plisp_car(arglist));
@@ -180,15 +201,47 @@ plisp_fn_t plisp_compile_lambda(plisp_t lambda) {
         jit_getarg(JIT_R0, jit_arg());
         *pval = push(_state, JIT_R0);
 
+        real_nargs++;
     }
 
+    if (plisp_c_nullp(arglist)) {
+        // assert that the right number of arguments were passed
+        jit_ldxi(JIT_R0, JIT_FP, nargs);
+        jit_prepare();
+        jit_pushargi(real_nargs);
+        jit_pushargr(JIT_R0);
+        jit_finishi(assert_nargs);
+    } else {
+        assert(plisp_c_symbolp(arglist));
+        // pass the remaining arguments as a list
 
-    // assert that the right number of arguments were passed
-    jit_ldxi(JIT_R0, JIT_FP, nargs);
-    jit_prepare();
-    jit_pushargi(plisp_c_length(plisp_car(plisp_cdr(lambda))));
-    jit_pushargr(JIT_R0);
-    jit_finishi(assert_nargs);
+        jit_ellipsis();
+        jit_va_start(JIT_R0);
+        int va = push(_state, JIT_R0);
+
+        jit_ldxi(JIT_R0, JIT_FP, nargs);
+        jit_prepare();
+        jit_pushargi(real_nargs);
+        jit_pushargr(JIT_R0);
+        jit_finishi(assert_gt_nargs);
+
+        jit_ldxi(JIT_R1, JIT_FP, va);
+        jit_ldxi(JIT_R0, JIT_FP, nargs);
+        jit_addi(JIT_R0, JIT_R0, -real_nargs);
+        jit_prepare();
+        jit_pushargr(JIT_R0);
+        jit_pushargr(JIT_R1);
+        jit_finishi(va_to_list);
+
+        pop(_state, JIT_R1);
+
+        int *pval;
+        JLI(pval, _state->arg_table, arglist);
+        jit_retval(JIT_R0);
+        *pval = push(_state, JIT_R0);
+
+        jit_va_end(JIT_R1);
+    }
 
     for (plisp_t exprlist = plisp_cdr(plisp_cdr(lambda));
          exprlist != plisp_nil; exprlist = plisp_cdr(exprlist)) {

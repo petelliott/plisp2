@@ -14,6 +14,7 @@ plisp_t plisp_builtin_cons(size_t nargs, plisp_t car, plisp_t cdr);
 plisp_t plisp_builtin_car(size_t nargs, plisp_t cell);
 plisp_t plisp_builtin_cdr(size_t nargs, plisp_t cell);
 
+plisp_t plisp_c_reverse(plisp_t lst);
 plisp_t plisp_builtin_reverse(size_t nargs, plisp_t lst, plisp_t onto);
 plisp_t plisp_builtin_list(size_t nargs, ...);
 
