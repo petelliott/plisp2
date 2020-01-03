@@ -219,12 +219,14 @@ plisp_fn_t plisp_compile_lambda(plisp_t lambda) {
         jit_va_start(JIT_R0);
         int va = push(_state, JIT_R0);
 
+        // make sure we get the minimum number of arguments
         jit_ldxi(JIT_R0, JIT_FP, nargs);
         jit_prepare();
         jit_pushargi(real_nargs);
         jit_pushargr(JIT_R0);
         jit_finishi(assert_gt_nargs);
 
+        // get a list of the remaining arguments
         jit_ldxi(JIT_R1, JIT_FP, va);
         jit_ldxi(JIT_R0, JIT_FP, nargs);
         jit_addi(JIT_R0, JIT_R0, -real_nargs);

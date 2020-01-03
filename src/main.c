@@ -15,13 +15,12 @@ int main(int argc, char *argv[]) {
     plisp_init_builtin();
 
     if (argc > 1) {
-        /*
         FILE *file = fopen(argv[1], "r");
 
-        while (1) {
-            plisp_t obj = plisp_c_read(file);
+        plisp_t obj;
+        while (!plisp_c_eofp(obj = plisp_c_read(file))) {
+            plisp_toplevel_eval(obj);
         }
-        */
     } else {
         while (1) {
             printf("> ");

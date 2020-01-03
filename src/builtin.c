@@ -1,6 +1,7 @@
 #include <plisp/builtin.h>
 #include <plisp/object.h>
 #include <plisp/read.h>
+#include <plisp/write.h>
 #include <plisp/toplevel.h>
 #include <assert.h>
 #include <stdarg.h>
@@ -24,8 +25,12 @@ void plisp_init_builtin(void) {
     plisp_define_builtin("not", plisp_builtin_not);
     plisp_define_builtin("null?", plisp_builtin_nullp);
     plisp_define_builtin("eq?", plisp_builtin_eq);
+    plisp_define_builtin("<", plisp_builtin_lt);
 
     plisp_define_builtin("length", plisp_builtin_length);
+
+    plisp_define_builtin("display", plisp_builtin_display);
+    plisp_define_builtin("newline", plisp_builtin_newline);
 
     #pragma GCC diagnostic pop
 }
@@ -145,6 +150,11 @@ plisp_t plisp_builtin_eq(size_t nargs, plisp_t a, plisp_t b) {
     return plisp_make_bool(a == b);
 }
 
+plisp_t plisp_builtin_lt(size_t nargs, plisp_t a, plisp_t b) {
+    assert(nargs == 2);
+    return plisp_make_bool(a < b);
+}
+
 size_t plisp_c_length(plisp_t lst) {
     assert(plisp_c_consp(lst) || plisp_c_nullp(lst));
 
@@ -158,4 +168,16 @@ size_t plisp_c_length(plisp_t lst) {
 plisp_t plisp_builtin_length(size_t nargs, plisp_t lst) {
     assert(nargs == 1);
     return plisp_make_fixnum(plisp_c_length(lst));
+}
+
+plisp_t plisp_builtin_display(size_t nargs, plisp_t obj) {
+    assert(nargs == 1);
+    plisp_c_write(stdout, obj);
+    return plisp_nil;
+}
+
+plisp_t plisp_builtin_newline(size_t nargs) {
+    assert(nargs == 0);
+    putchar('\n');
+    return plisp_nil;
 }
