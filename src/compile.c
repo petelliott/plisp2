@@ -30,6 +30,7 @@ struct lambda_state {
     Pvoid_t arg_table;
     int stack_max;
     int stack_cur;
+    struct lambda_state *parent;
 };
 #define _jit (_state->jit)
 
@@ -75,6 +76,9 @@ static void assert_gt_nargs(size_t expected, size_t got) {
 #endif
 
 static void plisp_compile_expr(struct lambda_state *_state, plisp_t expr);
+static plisp_fn_t plisp_compile_lambda_context(
+    plisp_t lambda,
+    struct lambda_state *parent_state);
 
 static void plisp_compile_call(struct lambda_state *_state, plisp_t expr) {
     int args[128];
@@ -134,7 +138,7 @@ static void plisp_compile_if(struct lambda_state *_state, plisp_t expr) {
 static void plisp_compile_expr(struct lambda_state *_state, plisp_t expr) {
     if (plisp_c_consp(expr)) {
         if (plisp_car(expr) == lambda_sym) {
-            plisp_fn_t fun = plisp_compile_lambda(expr);
+            plisp_fn_t fun = plisp_compile_lambda_context(expr, _state);
             jit_prepare();
             jit_pushargi((jit_word_t) NULL);
             jit_pushargi((jit_word_t) fun);
@@ -176,13 +180,17 @@ static plisp_t va_to_list(size_t nargs, va_list args) {
     return plisp_c_reverse(lst);
 }
 
-plisp_fn_t plisp_compile_lambda(plisp_t lambda) {
+static plisp_fn_t plisp_compile_lambda_context(
+    plisp_t lambda,
+    struct lambda_state *parent_state) {
+
     // maps argument names to nodes
     struct lambda_state state = {
         .jit = jit_new_state(),
         .arg_table = NULL,
         .stack_max = 0,
-        .stack_cur = 0
+        .stack_cur = 0,
+        .parent = parent_state
     };
 
     struct lambda_state *_state = &state;
@@ -271,4 +279,8 @@ plisp_fn_t plisp_compile_lambda(plisp_t lambda) {
     //jit_disassemble();
 
     return fun;
+}
+
+plisp_fn_t plisp_compile_lambda(plisp_t lambda) {
+    return plisp_compile_lambda_context(lambda, NULL);
 }
