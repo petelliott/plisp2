@@ -51,6 +51,7 @@ static void pop(struct lambda_state *_state, int reg) {
     _state->stack_cur += sizeof(plisp_t);
 }
 
+#ifndef PLISP_UNSAFE
 static void assert_is_closure(plisp_t clos) {
     if (!plisp_c_closurep(clos)) {
         fprintf(stderr, "error: attempt to call non-closure object\n");
@@ -71,6 +72,7 @@ static void assert_gt_nargs(size_t expected, size_t got) {
     }
     assert(expected <= got);
 }
+#endif
 
 static void plisp_compile_expr(struct lambda_state *_state, plisp_t expr);
 
@@ -85,6 +87,8 @@ static void plisp_compile_call(struct lambda_state *_state, plisp_t expr) {
     }
 
     plisp_compile_expr(_state, plisp_car(expr));
+
+    #ifndef PLISP_UNSAFE
     push(_state, JIT_R0);
 
     // assert that we are calling a closure
@@ -93,6 +97,7 @@ static void plisp_compile_call(struct lambda_state *_state, plisp_t expr) {
     jit_finishi(assert_is_closure);
 
     pop(_state, JIT_R0);
+    #endif
 
     jit_note(__FILE__, __LINE__);
     jit_prepare();
@@ -205,12 +210,14 @@ plisp_fn_t plisp_compile_lambda(plisp_t lambda) {
     }
 
     if (plisp_c_nullp(arglist)) {
+        #ifndef PLISP_UNSAFE
         // assert that the right number of arguments were passed
         jit_ldxi(JIT_R0, JIT_FP, nargs);
         jit_prepare();
         jit_pushargi(real_nargs);
         jit_pushargr(JIT_R0);
         jit_finishi(assert_nargs);
+        #endif
     } else {
         assert(plisp_c_symbolp(arglist));
         // pass the remaining arguments as a list
@@ -219,12 +226,14 @@ plisp_fn_t plisp_compile_lambda(plisp_t lambda) {
         jit_va_start(JIT_R0);
         int va = push(_state, JIT_R0);
 
+        #ifndef PLISP_UNSAFE
         // make sure we get the minimum number of arguments
         jit_ldxi(JIT_R0, JIT_FP, nargs);
         jit_prepare();
         jit_pushargi(real_nargs);
         jit_pushargr(JIT_R0);
         jit_finishi(assert_gt_nargs);
+        #endif
 
         // get a list of the remaining arguments
         jit_ldxi(JIT_R1, JIT_FP, va);

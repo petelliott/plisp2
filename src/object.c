@@ -1,6 +1,6 @@
 #include <plisp/object.h>
 #include <plisp/gc.h>
-#include <assert.h>
+#include <plisp/saftey.h>
 #include <string.h>
 #include <stdlib.h>
 
@@ -13,7 +13,7 @@ plisp_t plisp_make_fixnum(int64_t val) {
 }
 
 int64_t plisp_fixnum_value(plisp_t val) {
-    assert(plisp_c_fixnump(val));
+    plisp_assert(plisp_c_fixnump(val));
     return ((int64_t) val) >> LOSHIFT;
 }
 
@@ -26,7 +26,7 @@ plisp_t plisp_make_bool(bool val) {
 }
 
 bool plisp_bool_value(plisp_t val) {
-    assert(plisp_c_boolp(val));
+    plisp_assert(plisp_c_boolp(val));
     return val >> HISHIFT;
 }
 
@@ -40,7 +40,7 @@ plisp_t plisp_make_char(char val) {
 }
 
 char plisp_char_value(plisp_t val) {
-    assert(plisp_c_charp(val));
+    plisp_assert(plisp_c_charp(val));
     return val >> 32;
 }
 
@@ -58,13 +58,13 @@ plisp_t plisp_cons(plisp_t car, plisp_t cdr) {
 }
 
 plisp_t plisp_car(plisp_t cons) {
-    assert(plisp_c_consp(cons));
+    plisp_assert(plisp_c_consp(cons));
     struct plisp_cons *cellptr = (void *) (cons & ~LOTAGS);
     return cellptr->car;
 }
 
 plisp_t plisp_cdr(plisp_t cons) {
-    assert(plisp_c_consp(cons));
+    plisp_assert(plisp_c_consp(cons));
     struct plisp_cons *cellptr = (void *) (cons & ~LOTAGS);
     return cellptr->cdr;
 }
@@ -87,13 +87,13 @@ plisp_t plisp_make_closure(struct plisp_closure_data *data, plisp_fn_t fun) {
 }
 
 struct plisp_closure_data *plisp_closure_data(plisp_t closure) {
-    assert(plisp_c_closurep(closure));
+    plisp_assert(plisp_c_closurep(closure));
     struct plisp_closure *clptr = (void *) (closure & ~LOTAGS);
     return clptr->data;
 }
 
 plisp_fn_t plisp_closure_fun(plisp_t closure) {
-    assert(plisp_c_closurep(closure));
+    plisp_assert(plisp_c_closurep(closure));
     struct plisp_closure *clptr = (void *) (closure & ~LOTAGS);
     return clptr->fun;
 }
@@ -108,7 +108,7 @@ plisp_t plisp_make_symbol(const char *string) {
 }
 
 plisp_t plisp_symbol_name(plisp_t val) {
-    assert(plisp_c_symbolp(val));
+    plisp_assert(plisp_c_symbolp(val));
     return (val & ~LOTAGS) | LT_STRING;
 }
 
@@ -157,13 +157,13 @@ plisp_t plisp_make_string(const char *string) {
 }
 
 const char *plisp_string_value(plisp_t str) {
-    assert(plisp_c_stringp(str));
+    plisp_assert(plisp_c_stringp(str));
     struct plisp_vector *strptr = (void *) (str & ~LOTAGS);
     return strptr->vec;
 }
 
 size_t plisp_c_stringlen(plisp_t str) {
-    assert(plisp_c_stringp(str));
+    plisp_assert(plisp_c_stringp(str));
     struct plisp_vector *strptr = (void *) (str & ~LOTAGS);
     return strptr->len - 1;
 }

@@ -3,7 +3,7 @@
 #include <plisp/read.h>
 #include <plisp/write.h>
 #include <plisp/toplevel.h>
-#include <assert.h>
+#include <plisp/saftey.h>
 #include <stdarg.h>
 
 void plisp_init_builtin(void) {
@@ -42,9 +42,9 @@ void plisp_define_builtin(const char *name, plisp_fn_t fun) {
 }
 
 plisp_t plisp_builtin_plus(size_t nargs, plisp_t a, plisp_t b, ...) {
-    assert(plisp_c_fixnump(a));
-    assert(plisp_c_fixnump(b));
-    assert(nargs >= 2);
+    plisp_assert(plisp_c_fixnump(a));
+    plisp_assert(plisp_c_fixnump(b));
+    plisp_assert(nargs >= 2);
 
     va_list vl;
     va_start(vl, b);
@@ -53,7 +53,7 @@ plisp_t plisp_builtin_plus(size_t nargs, plisp_t a, plisp_t b, ...) {
 
     for (size_t i = 2; i < nargs; ++i) {
         plisp_t arg = va_arg(vl, plisp_t);
-        assert(plisp_c_fixnump(arg));
+        plisp_assert(plisp_c_fixnump(arg));
         sum += arg;
     }
 
@@ -63,9 +63,9 @@ plisp_t plisp_builtin_plus(size_t nargs, plisp_t a, plisp_t b, ...) {
 }
 
 plisp_t plisp_builtin_minus(size_t nargs, plisp_t a, plisp_t b, ...) {
-    assert(plisp_c_fixnump(a));
-    assert(plisp_c_fixnump(b));
-    assert(nargs >= 2);
+    plisp_assert(plisp_c_fixnump(a));
+    plisp_assert(plisp_c_fixnump(b));
+    plisp_assert(nargs >= 2);
 
     va_list vl;
     va_start(vl, b);
@@ -74,7 +74,7 @@ plisp_t plisp_builtin_minus(size_t nargs, plisp_t a, plisp_t b, ...) {
 
     for (size_t i = 2; i < nargs; ++i) {
         plisp_t arg = va_arg(vl, plisp_t);
-        assert(plisp_c_fixnump(arg));
+        plisp_assert(plisp_c_fixnump(arg));
         sum -= arg;
     }
 
@@ -84,17 +84,17 @@ plisp_t plisp_builtin_minus(size_t nargs, plisp_t a, plisp_t b, ...) {
 }
 
 plisp_t plisp_builtin_cons(size_t nargs, plisp_t car, plisp_t cdr) {
-    assert(nargs == 2);
+    plisp_assert(nargs == 2);
     return plisp_cons(car, cdr);
 }
 
 plisp_t plisp_builtin_car(size_t nargs, plisp_t cell) {
-    assert(nargs == 1);
+    plisp_assert(nargs == 1);
     return plisp_car(cell);
 }
 
 plisp_t plisp_builtin_cdr(size_t nargs, plisp_t cell) {
-    assert(nargs == 1);
+    plisp_assert(nargs == 1);
     return plisp_car(cell);
 }
 
@@ -103,7 +103,7 @@ plisp_t plisp_c_reverse(plisp_t lst) {
 }
 
 plisp_t plisp_builtin_reverse(size_t nargs, plisp_t lst, plisp_t onto) {
-    assert(nargs == 1 || nargs == 2);
+    plisp_assert(nargs == 1 || nargs == 2);
 
     if (plisp_c_nullp(lst)) {
         return onto;
@@ -132,7 +132,7 @@ plisp_t plisp_builtin_list(size_t nargs, ...) {
 }
 
 plisp_t plisp_builtin_not(size_t nargs, plisp_t obj) {
-    assert(nargs == 1);
+    plisp_assert(nargs == 1);
     if (obj == plisp_make_bool(false)) {
         return plisp_make_bool(true);
     } else {
@@ -141,22 +141,22 @@ plisp_t plisp_builtin_not(size_t nargs, plisp_t obj) {
 }
 
 plisp_t plisp_builtin_nullp(size_t nargs, plisp_t obj) {
-    assert(nargs == 1);
+    plisp_assert(nargs == 1);
     return plisp_make_bool(plisp_c_nullp(obj));
 }
 
 plisp_t plisp_builtin_eq(size_t nargs, plisp_t a, plisp_t b) {
-    assert(nargs == 2);
+    plisp_assert(nargs == 2);
     return plisp_make_bool(a == b);
 }
 
 plisp_t plisp_builtin_lt(size_t nargs, plisp_t a, plisp_t b) {
-    assert(nargs == 2);
+    plisp_assert(nargs == 2);
     return plisp_make_bool(a < b);
 }
 
 size_t plisp_c_length(plisp_t lst) {
-    assert(plisp_c_consp(lst) || plisp_c_nullp(lst));
+    plisp_assert(plisp_c_consp(lst) || plisp_c_nullp(lst));
 
     if (plisp_c_nullp(lst)) {
         return 0;
@@ -166,18 +166,18 @@ size_t plisp_c_length(plisp_t lst) {
 }
 
 plisp_t plisp_builtin_length(size_t nargs, plisp_t lst) {
-    assert(nargs == 1);
+    plisp_assert(nargs == 1);
     return plisp_make_fixnum(plisp_c_length(lst));
 }
 
 plisp_t plisp_builtin_display(size_t nargs, plisp_t obj) {
-    assert(nargs == 1);
+    plisp_assert(nargs == 1);
     plisp_c_write(stdout, obj);
     return plisp_nil;
 }
 
 plisp_t plisp_builtin_newline(size_t nargs) {
-    assert(nargs == 0);
+    plisp_assert(nargs == 0);
     putchar('\n');
     return plisp_nil;
 }
