@@ -103,7 +103,8 @@ static void plisp_gc_set_permanent(plisp_t obj, bool flag) {
         if (obj >= (plisp_t) allocs->objs
             && obj < (plisp_t) (allocs->objs + allocs->num_objs)) {
 
-            size_t idx = (obj & ~LOTAGS) - (uintptr_t) allocs->objs;
+            size_t idx = ((obj & ~LOTAGS) - (uintptr_t) allocs->objs)
+                / sizeof(struct plisp_cons);
             set_bit(allocs->permanent, idx, flag);
             return;
         }
