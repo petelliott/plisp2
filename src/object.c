@@ -34,8 +34,7 @@ bool plisp_c_charp(plisp_t val) {
     return (val & HITAGS) == (LT_HITAGS | HT_CHAR);
 }
 
-plisp_t plisp_make_char(char val) {
-    //TODO: maybe support 32-bit?
+plisp_t plisp_make_char(uint32_t val) {
     return ((uintptr_t) val) << 32 | LT_HITAGS | HT_CHAR;
 }
 
@@ -137,8 +136,43 @@ plisp_t plisp_make_vector(enum plisp_vec_type type, uint8_t
 }
 
 plisp_t plisp_vector_ref(plisp_t vec, size_t idx) {
-    //TODO ref vectors
+    plisp_assert(plisp_c_vectorp(vec));
+    struct plisp_vector *vecptr = (void *) (vec & ~LOTAGS);
+
+    plisp_assert(idx < vecptr->len);
+
+    if (vecptr->type == VEC_OBJ) {
+        plisp_assert(vecptr->elem_width == sizeof(plisp_t));
+        return *(plisp_t *)(vecptr->vec + vecptr->elem_width * idx);
+    } else {
+        //TODO
+        assert(false);
+    }
+
     return plisp_nil;
+}
+
+plisp_t plisp_vector_set(plisp_t vec, size_t idx, plisp_t value) {
+    plisp_assert(plisp_c_vectorp(vec));
+    struct plisp_vector *vecptr = (void *) (vec & ~LOTAGS);
+
+    plisp_assert(idx < vecptr->len);
+
+    if (vecptr->type == VEC_OBJ) {
+        plisp_assert(vecptr->elem_width == sizeof(plisp_t));
+        *(plisp_t *)(vecptr->vec + vecptr->elem_width * idx) = value;
+    } else {
+        //TODO
+        assert(false);
+    }
+
+    return plisp_nil;
+}
+
+size_t plisp_vector_c_length(plisp_t vec) {
+    plisp_assert(plisp_c_vectorp(vec));
+    struct plisp_vector *vecptr = (void *) (vec & ~LOTAGS);
+    return vecptr->len;
 }
 
 bool plisp_c_stringp(plisp_t val) {

@@ -42,7 +42,7 @@ plisp_t plisp_make_bool(bool val);
 bool plisp_bool_value(plisp_t val);
 
 bool plisp_c_charp(plisp_t val);
-plisp_t plisp_make_char(char val);
+plisp_t plisp_make_char(uint32_t val);
 char plisp_char_value(plisp_t val);
 
 struct plisp_cons {
@@ -103,6 +103,8 @@ plisp_t plisp_make_vector(enum plisp_vec_type type, uint8_t
                           elem_width, uint16_t flags, uint32_t len,
                           plisp_t initial_element, bool use_ie);
 plisp_t plisp_vector_ref(plisp_t vec, size_t idx);
+plisp_t plisp_vector_set(plisp_t vec, size_t idx, plisp_t value);
+size_t plisp_vector_c_length(plisp_t vec);
 
 bool plisp_c_stringp(plisp_t val);
 plisp_t plisp_make_string(const char *string);
