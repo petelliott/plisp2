@@ -30,6 +30,8 @@ void plisp_init_builtin(void) {
     plisp_define_builtin("length", plisp_builtin_length);
 
     plisp_define_builtin("display", plisp_builtin_display);
+    plisp_define_builtin("write", plisp_builtin_write);
+    plisp_define_builtin("println", plisp_builtin_println);
     plisp_define_builtin("newline", plisp_builtin_newline);
 
     #pragma GCC diagnostic pop
@@ -177,6 +179,29 @@ plisp_t plisp_builtin_length(plisp_t *clos, size_t nargs, plisp_t lst) {
 plisp_t plisp_builtin_display(plisp_t *clos, size_t nargs, plisp_t obj) {
     plisp_assert(nargs == 1);
     plisp_c_write(stdout, obj);
+    return plisp_unspec;
+}
+
+plisp_t plisp_builtin_write(plisp_t *clos, size_t nargs, plisp_t obj) {
+    plisp_assert(nargs == 1);
+    plisp_c_write(stdout, obj);
+    return plisp_unspec;
+}
+
+plisp_t plisp_builtin_println(plisp_t *clos, size_t nargs, ...) {
+    va_list vl;
+    va_start(vl, nargs);
+
+    for (size_t i = 0; i < nargs; ++i) {
+        if (i != 0) {
+            putchar(' ');
+        }
+        plisp_t arg = va_arg(vl, plisp_t);
+        plisp_c_write(stdout, arg);
+    }
+    putchar('\n');
+
+    va_end(vl);
     return plisp_unspec;
 }
 
