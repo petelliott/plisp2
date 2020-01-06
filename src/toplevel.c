@@ -1,6 +1,7 @@
 #include <plisp/toplevel.h>
 #include <plisp/gc.h>
 #include <plisp/read.h>
+#include <plisp/write.h>
 #include <plisp/compile.h>
 #include <Judy.h>
 #include <assert.h>
