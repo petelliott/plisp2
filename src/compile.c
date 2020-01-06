@@ -32,6 +32,7 @@ struct lambda_state {
     Pvoid_t arg_table;
     int stack_max;
     int stack_cur;
+    int stack_nopop;
     struct lambda_state *parent;
     Pvoid_t closure_vars;
     size_t closure_idx;
@@ -50,11 +51,19 @@ static int push(struct lambda_state *_state, int reg) {
     return _state->stack_cur;
 }
 
+static int push_perm(struct lambda_state *_state, int reg) {
+    // like push, but prevents popping.
+    int blk = push(_state, reg);
+    _state->stack_nopop = blk;
+    return blk;
+}
+
 static void pop(struct lambda_state *_state, int reg) {
     if (reg != -1) {
         jit_ldxi(reg, JIT_FP, _state->stack_cur);
     }
     _state->stack_cur += sizeof(plisp_t);
+    assert(_state->stack_cur <= _state->stack_nopop);
 }
 
 #ifndef PLISP_UNSAFE
@@ -302,7 +311,7 @@ static void plisp_compile_local_define(struct lambda_state *_state,
     JLI(pval, _state->arg_table, sym);
 
     plisp_compile_expr(_state, valexpr);
-    *pval = push(_state, JIT_R0);
+    *pval = push_perm(_state, JIT_R0);
 
     jit_movi(JIT_R0, plisp_unspec);
 }
@@ -337,6 +346,7 @@ static plisp_fn_t plisp_compile_lambda_context(
         .arg_table = NULL,
         .stack_max = 0,
         .stack_cur = 0,
+        .stack_nopop = 0,
         .parent = parent_state,
         .closure_vars = NULL,
         .closure_idx = 0
@@ -349,10 +359,10 @@ static plisp_fn_t plisp_compile_lambda_context(
     jit_prolog();
 
     jit_getarg(JIT_R0, jit_arg());
-    _state->closure_on_stack = push(_state, JIT_R0);
+    _state->closure_on_stack = push_perm(_state, JIT_R0);
 
     jit_getarg(JIT_R0, jit_arg());
-    int nargs = push(_state, JIT_R0);
+    int nargs = push_perm(_state, JIT_R0);
 
     int real_nargs = 0;
 
@@ -364,7 +374,7 @@ static plisp_fn_t plisp_compile_lambda_context(
         JLI(pval, _state->arg_table, plisp_car(arglist));
 
         jit_getarg(JIT_R0, jit_arg());
-        *pval = push(_state, JIT_R0);
+        *pval = push_perm(_state, JIT_R0);
 
         real_nargs++;
     }
@@ -409,7 +419,7 @@ static plisp_fn_t plisp_compile_lambda_context(
         int *pval;
         JLI(pval, _state->arg_table, arglist);
         jit_retval(JIT_R0);
-        *pval = push(_state, JIT_R0);
+        *pval = push_perm(_state, JIT_R0);
 
         jit_va_end(JIT_R1);
     }
