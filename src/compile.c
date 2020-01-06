@@ -2,6 +2,7 @@
 #include <lightning.h>
 #include <Judy.h>
 #include <plisp/read.h>
+#include <plisp/write.h>
 #include <plisp/gc.h>
 #include <plisp/toplevel.h>
 #include <plisp/builtin.h>
@@ -75,6 +76,15 @@ static void assert_gt_nargs(size_t expected, size_t got) {
         fprintf(stderr, "error: expected >=%lu args, got %lu\n", expected, got);
     }
     assert(expected <= got);
+}
+
+static void assert_bound(plisp_t obj, plisp_t sym) {
+    if (obj == plisp_unbound) {
+        fprintf(stderr, "error: attempt to reference unbound variable '");
+        plisp_c_write(stderr, sym);
+        fprintf(stderr, "'\n");
+    }
+    assert(obj != plisp_unbound);
 }
 #endif
 
@@ -187,6 +197,18 @@ static void plisp_compile_ref(struct lambda_state *_state, plisp_t sym) {
 
     plisp_t *tl_slot = plisp_toplevel_ref(sym);
     jit_ldi(JIT_R0, tl_slot);
+
+    #ifndef PLISP_UNSAFE
+    push(_state, JIT_R0);
+
+    // assert that the variable we reference is bound
+    jit_prepare();
+    jit_pushargr(JIT_R0);
+    jit_pushargi(sym);
+    jit_finishi(assert_bound);
+
+    pop(_state, JIT_R0);
+    #endif
 }
 
 static void plisp_compile_gen_closure(struct lambda_state *_state,

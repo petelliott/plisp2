@@ -23,7 +23,7 @@ plisp_t *plisp_toplevel_ref(plisp_t sym) {
     plisp_t *pval;
     JLG(pval, toplevel_scope, sym);
     if (pval == NULL) {
-        plisp_t box = plisp_make_consbox(plisp_nil);
+        plisp_t box = plisp_make_consbox(plisp_unbound);
         plisp_gc_permanent(box);
         JLI(pval, toplevel_scope, sym);
         *pval = box;
@@ -73,9 +73,11 @@ plisp_t plisp_toplevel_eval(plisp_t form) {
         }
     } else if (plisp_c_symbolp(form)) {
         plisp_t *ref = plisp_toplevel_ref(form);
-        if (ref == NULL) {
-            fprintf(stderr, "attempt to reference undefined variale\n");
-            return plisp_nil;
+        if (*ref == plisp_unbound) {
+            fprintf(stderr, "error: attempt to reference unbound variable '");
+            plisp_c_write(stderr, form);
+            fprintf(stderr, "'\n");
+            return plisp_unspec;
         }
         return *ref;
     }
