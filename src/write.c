@@ -68,6 +68,8 @@ void plisp_c_write(FILE *f, plisp_t obj) {
         fprintf(f, "#<compiled closure>");
     } else if (obj == plisp_unspec) {
         fprintf(f, "#<unspecified>");
+    } else if (obj == plisp_unbound) {
+        fprintf(f, "#<unbound>");
     } else {
         fprintf(f, "#?");
     }

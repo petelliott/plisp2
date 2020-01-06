@@ -49,6 +49,15 @@ static plisp_t do_define(plisp_t form) {
                         plisp_cdr(plisp_car(plisp_cdr(form))),
                         plisp_cdr(plisp_cdr(form))))));
     } else {
+        // predifine as bound to avoid generating the runtime
+        // check for bound variables when recursing
+        if (plisp_car(plisp_cdr(plisp_cdr(form)))
+            != plisp_car(plisp_cdr(form))) {
+
+            plisp_toplevel_define(
+                plisp_car(plisp_cdr(form)),
+                plisp_unspec);
+        }
         // value define
         plisp_toplevel_define(
             plisp_car(plisp_cdr(form)),
