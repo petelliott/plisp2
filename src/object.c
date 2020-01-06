@@ -76,7 +76,7 @@ bool plisp_c_closurep(plisp_t val) {
     return (val & LOTAGS) == LT_CLOS;
 }
 
-plisp_t plisp_make_closure(struct plisp_closure_data *data, plisp_fn_t fun) {
+plisp_t plisp_make_closure(plisp_t *data, plisp_fn_t fun) {
     plisp_t closure = plisp_alloc_obj(LT_CLOS);
     struct plisp_closure *clptr = (void *) (closure & ~LOTAGS);
     clptr->data = data;

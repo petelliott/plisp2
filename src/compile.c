@@ -30,6 +30,10 @@ struct lambda_state {
     Pvoid_t arg_table;
     int stack_max;
     int stack_cur;
+    struct lambda_state *parent;
+    Pvoid_t closure_vars;
+    size_t closure_idx;
+    int closure_on_stack;
 };
 #define _jit (_state->jit)
 
@@ -75,6 +79,10 @@ static void assert_gt_nargs(size_t expected, size_t got) {
 #endif
 
 static void plisp_compile_expr(struct lambda_state *_state, plisp_t expr);
+static plisp_fn_t plisp_compile_lambda_context(
+    plisp_t lambda,
+    struct lambda_state *parent_state,
+    Pvoid_t *closure_vars);
 
 static void plisp_compile_call(struct lambda_state *_state, plisp_t expr) {
     int args[128];
@@ -99,8 +107,12 @@ static void plisp_compile_call(struct lambda_state *_state, plisp_t expr) {
     pop(_state, JIT_R0);
     #endif
 
-    jit_note(__FILE__, __LINE__);
+    // inline closure call (change whenever plisp_closure changes)
+    jit_andi(JIT_R0, JIT_R0, ~LOTAGS);
+    jit_ldr(JIT_R1, JIT_R0);
+
     jit_prepare();
+    jit_pushargr(JIT_R1); // push closure data
     jit_pushargi(nargs);
     for (int i = 0; i < nargs; ++i) {
         jit_ldxi(JIT_R1, JIT_FP, args[i]);
@@ -109,12 +121,9 @@ static void plisp_compile_call(struct lambda_state *_state, plisp_t expr) {
     for (int i = 0; i < nargs; ++i) {
         pop(_state, -1);
     }
-    // inline closure call (change whenever plisp_closure changes)
-    jit_andi(JIT_R0, JIT_R0, ~LOTAGS);
     jit_ldxi(JIT_R0, JIT_R0, sizeof(struct plisp_closure_data *));
     jit_finishr(JIT_R0);
     jit_retval(JIT_R0);
-    jit_note(__FILE__, __LINE__);
 }
 
 static void plisp_compile_if(struct lambda_state *_state, plisp_t expr) {
@@ -131,12 +140,95 @@ static void plisp_compile_if(struct lambda_state *_state, plisp_t expr) {
     jit_patch(rest);
 }
 
+
+static ssize_t plisp_get_closure(struct lambda_state *_state, plisp_t sym) {
+    if (_state->parent == NULL) {
+        return -1;
+    }
+
+    int *pval;
+    JLG(pval, _state->arg_table, sym);
+    // tell everyone below us to add the value to their closures
+    if (pval != NULL) {
+        return 0;
+    }
+
+    size_t *clnum;
+    JLG(clnum, _state->closure_vars, sym);
+    if (clnum != NULL) {
+        return *clnum;
+    }
+
+    ssize_t idx = plisp_get_closure(_state->parent, sym);
+    if (idx == -1) {
+        return -1;
+    } else {
+        JLI(clnum, _state->closure_vars, sym);
+        *clnum = _state->closure_idx;
+        _state->closure_idx++;
+        return *clnum;
+    }
+}
+
+static void plisp_compile_ref(struct lambda_state *_state, plisp_t sym) {
+    int *pval;
+    JLG(pval, _state->arg_table, sym);
+    if (pval != NULL) {
+        jit_ldxi(JIT_R0, JIT_FP, *pval);
+        return;
+    }
+
+    ssize_t closure_idx = plisp_get_closure(_state, sym);
+    if (closure_idx != -1) {
+        jit_ldxi(JIT_R0, JIT_FP, _state->closure_on_stack);
+        jit_ldxi(JIT_R0, JIT_R0, closure_idx * sizeof(plisp_t));
+        return;
+    }
+
+    plisp_t *tl_slot = plisp_toplevel_ref(sym);
+    jit_ldi(JIT_R0, tl_slot);
+}
+
+static void plisp_compile_gen_closure(struct lambda_state *_state,
+                                      Pvoid_t closure) {
+    size_t num_elems;
+    JLC(num_elems, closure, 0, -1);
+
+    // don't generate a malloc call if it isn't a closure
+    if (num_elems == 0) {
+        jit_movi(JIT_R0, (jit_word_t) NULL);
+        return;
+    }
+
+    jit_prepare();
+    jit_pushargi(num_elems * sizeof(plisp_t));
+    jit_finishi(malloc);
+    jit_retval(JIT_R1); //R1 holds the closure data
+
+    size_t *off;
+    plisp_t idx = 0;
+    JLF(off, closure, idx);
+    while (off != NULL) {
+        plisp_compile_ref(_state, idx);
+        jit_stxi(*off * sizeof(plisp_t), JIT_R1, JIT_R0);
+        JLN(off, closure, idx);
+    }
+}
+
 static void plisp_compile_expr(struct lambda_state *_state, plisp_t expr) {
     if (plisp_c_consp(expr)) {
         if (plisp_car(expr) == lambda_sym) {
-            plisp_fn_t fun = plisp_compile_lambda(expr);
+            Pvoid_t closure;
+            plisp_fn_t fun = plisp_compile_lambda_context(expr, _state, &closure);
+
+            // produces closure data in JIT_R1
+            plisp_compile_gen_closure(_state, closure);
+
+            size_t Rc_word;
+            JLFA(Rc_word, closure);
+
             jit_prepare();
-            jit_pushargi((jit_word_t) NULL);
+            jit_pushargr(JIT_R1);
             jit_pushargi((jit_word_t) fun);
             jit_finishi(plisp_make_closure);
             jit_retval(JIT_R0);
@@ -152,15 +244,7 @@ static void plisp_compile_expr(struct lambda_state *_state, plisp_t expr) {
             plisp_compile_call(_state, expr);
         }
     } else if (plisp_c_symbolp(expr)) {
-        int *pval;
-        JLG(pval, _state->arg_table, expr);
-        if (pval != NULL) {
-            jit_ldxi(JIT_R0, JIT_FP, *pval);
-            return;
-        }
-
-        plisp_t *tl_slot = plisp_toplevel_ref(expr);
-        jit_ldi(JIT_R0, tl_slot);
+        plisp_compile_ref(_state, expr);
     } else {
         jit_movi(JIT_R0, expr);
     }
@@ -176,13 +260,20 @@ static plisp_t va_to_list(size_t nargs, va_list args) {
     return plisp_c_reverse(lst);
 }
 
-plisp_fn_t plisp_compile_lambda(plisp_t lambda) {
+static plisp_fn_t plisp_compile_lambda_context(
+    plisp_t lambda,
+    struct lambda_state *parent_state,
+    Pvoid_t *closure_vars) {
+
     // maps argument names to nodes
     struct lambda_state state = {
         .jit = jit_new_state(),
         .arg_table = NULL,
         .stack_max = 0,
-        .stack_cur = 0
+        .stack_cur = 0,
+        .parent = parent_state,
+        .closure_vars = NULL,
+        .closure_idx = 0
     };
 
     struct lambda_state *_state = &state;
@@ -190,6 +281,9 @@ plisp_fn_t plisp_compile_lambda(plisp_t lambda) {
     assert(plisp_car(lambda) == lambda_sym);
 
     jit_prolog();
+
+    jit_getarg(JIT_R0, jit_arg());
+    _state->closure_on_stack = push(_state, JIT_R0);
 
     jit_getarg(JIT_R0, jit_arg());
     int nargs = push(_state, JIT_R0);
@@ -267,8 +361,16 @@ plisp_fn_t plisp_compile_lambda(plisp_t lambda) {
     plisp_fn_t fun = jit_emit();
     jit_clear_state();
 
+    if (closure_vars != NULL) {
+        *closure_vars = _state->closure_vars;
+    }
+
     //printf("lambda:\n");
     //jit_disassemble();
 
     return fun;
+}
+
+plisp_fn_t plisp_compile_lambda(plisp_t lambda) {
+    return plisp_compile_lambda_context(lambda, NULL, NULL);
 }

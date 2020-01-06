@@ -71,7 +71,7 @@ plisp_t plisp_toplevel_eval(plisp_t form) {
 
 
             //TODO actually pass clousre info
-            return plisp_closure_fun(clos)(0);
+            return plisp_closure_fun(clos)(NULL, 0);
         }
     } else if (plisp_c_symbolp(form)) {
         plisp_t *ref = plisp_toplevel_ref(form);

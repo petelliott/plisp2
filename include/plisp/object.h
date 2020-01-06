@@ -58,21 +58,16 @@ plisp_t plisp_cdr(plisp_t cons);
 bool plisp_c_nullp(plisp_t val);
 #define plisp_nil ((plisp_t) (0lu | LT_CONS))
 
-struct plisp_closure_data {
-    uint32_t nargs;
-    bool     rest;
-    plisp_t  closed[];
-};
 
 typedef plisp_t (*plisp_fn_t)();
 
 struct plisp_closure {
-    struct plisp_closure_data *data;
+    void *data;
     plisp_fn_t fun;
 };
 
 bool plisp_c_closurep(plisp_t val);
-plisp_t plisp_make_closure(struct plisp_closure_data *data, plisp_fn_t fun);
+plisp_t plisp_make_closure(plisp_t *data, plisp_fn_t fun);
 struct plisp_closure_data *plisp_closure_data(plisp_t closure);
 plisp_fn_t plisp_closure_fun(plisp_t closure);
 
