@@ -16,7 +16,7 @@ enum plisp_lotag {
     LT_CLOS   = 4,
     LT_SYM    = 5,
     LT_VECTOR = 6,
-    LT_STRING = 7,
+    LT_NUMBER = 7,
 };
 
 // when LT_HITAGS is used, the higher 4 bits of the lowest byte is

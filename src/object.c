@@ -108,7 +108,7 @@ plisp_t plisp_make_symbol(const char *string) {
 
 plisp_t plisp_symbol_name(plisp_t val) {
     plisp_assert(plisp_c_symbolp(val));
-    return (val & ~LOTAGS) | LT_STRING;
+    return (val & ~LOTAGS) | LT_VECTOR;
 }
 
 bool plisp_c_vectorp(plisp_t val) {
@@ -176,14 +176,15 @@ size_t plisp_vector_c_length(plisp_t vec) {
 }
 
 bool plisp_c_stringp(plisp_t val) {
-    return (val & LOTAGS) == LT_STRING;
+    struct plisp_vector *strptr = (void *) (val & ~LOTAGS);
+    return plisp_c_vectorp(val) && strptr->type == VEC_CHAR;
 }
 
 plisp_t plisp_make_string(const char *string) {
     size_t len = strlen(string);
     plisp_t str = plisp_make_vector(VEC_CHAR, 0, VFLAG_IMMUTABLE, len+1,
                                     plisp_nil, false);
-    str = (str & ~LOTAGS) | LT_STRING;
+    str = (str & ~LOTAGS) | LT_VECTOR;
     struct plisp_vector *strptr = (void *) (str & ~LOTAGS);
     strncpy(strptr->vec, string, len+1);
 
