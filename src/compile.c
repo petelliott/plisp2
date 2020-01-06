@@ -11,12 +11,14 @@
 #include <stdarg.h>
 
 static plisp_t lambda_sym;
+static plisp_t define_sym;
 static plisp_t if_sym;
 static plisp_t quote_sym;
 
 void plisp_init_compiler(char *argv0) {
     init_jit(argv0);
     lambda_sym = plisp_intern(plisp_make_symbol("lambda"));
+    define_sym = plisp_intern(plisp_make_symbol("define"));
     if_sym = plisp_intern(plisp_make_symbol("if"));
     quote_sym = plisp_intern(plisp_make_symbol("quote"));
 }
@@ -24,7 +26,6 @@ void plisp_init_compiler(char *argv0) {
 void plisp_end_compiler(void) {
     finish_jit();
 }
-
 
 struct lambda_state {
     jit_state_t *jit;
@@ -276,6 +277,45 @@ static void plisp_compile_expr(struct lambda_state *_state, plisp_t expr) {
     }
 }
 
+static void plisp_compile_local_define(struct lambda_state *_state,
+                                       plisp_t form) {
+
+    plisp_t sym;
+    plisp_t valexpr;
+
+    if (plisp_c_consp(plisp_car(plisp_cdr(form)))) {
+        // function define
+        sym = plisp_car(plisp_car(plisp_cdr(form)));
+        valexpr = plisp_cons(
+                      lambda_sym,
+                      plisp_cons(
+                          plisp_cdr(plisp_car(plisp_cdr(form))),
+                          plisp_cdr(plisp_cdr(form))));
+    } else {
+        // value define
+        sym = plisp_car(plisp_cdr(form));
+        valexpr = plisp_car(plisp_cdr(plisp_cdr(form)));
+    }
+
+
+    int *pval;
+    JLI(pval, _state->arg_table, sym);
+
+    plisp_compile_expr(_state, valexpr);
+    *pval = push(_state, JIT_R0);
+
+    jit_movi(JIT_R0, plisp_unspec);
+}
+
+
+static void plisp_compile_stmt(struct lambda_state *_state, plisp_t expr) {
+    if (plisp_c_consp(expr) && plisp_car(expr) == define_sym) {
+        plisp_compile_local_define(_state, expr);
+    } else {
+        plisp_compile_expr(_state, expr);
+    }
+}
+
 static plisp_t va_to_list(size_t nargs, va_list args) {
 
     plisp_t lst = plisp_nil;
@@ -377,7 +417,7 @@ static plisp_fn_t plisp_compile_lambda_context(
     for (plisp_t exprlist = plisp_cdr(plisp_cdr(lambda));
          exprlist != plisp_nil; exprlist = plisp_cdr(exprlist)) {
 
-        plisp_compile_expr(_state, plisp_car(exprlist));
+        plisp_compile_stmt(_state, plisp_car(exprlist));
     }
     jit_retr(JIT_R0);
 

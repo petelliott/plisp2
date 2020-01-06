@@ -73,8 +73,6 @@ plisp_t plisp_toplevel_eval(plisp_t form) {
             plisp_t clos = plisp_make_closure(
                                NULL, plisp_compile_lambda(lamb));
 
-
-            //TODO actually pass clousre info
             return plisp_closure_fun(clos)(NULL, 0);
         }
     } else if (plisp_c_symbolp(form)) {
