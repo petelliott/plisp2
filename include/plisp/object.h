@@ -24,6 +24,7 @@ enum plisp_lotag {
 enum plisp_hitag {
     HT_BOOL = 8, // second lowest byte is 1 for #t, 0 for #f
     HT_CHAR = 16, // highest 32-bits is a UTF-32 char
+    HT_UNSPEC = 24,
 };
 
 #define LOTAGS  0x0Flu
@@ -58,6 +59,7 @@ plisp_t plisp_cdr(plisp_t cons);
 bool plisp_c_nullp(plisp_t val);
 #define plisp_nil ((plisp_t) (0lu | LT_CONS))
 
+#define plisp_unspec ((plisp_t) (0lu | HT_UNSPEC | LT_HITAGS))
 
 typedef plisp_t (*plisp_fn_t)();
 

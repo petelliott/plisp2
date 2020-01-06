@@ -177,11 +177,11 @@ plisp_t plisp_builtin_length(plisp_t *clos, size_t nargs, plisp_t lst) {
 plisp_t plisp_builtin_display(plisp_t *clos, size_t nargs, plisp_t obj) {
     plisp_assert(nargs == 1);
     plisp_c_write(stdout, obj);
-    return plisp_nil;
+    return plisp_unspec;
 }
 
 plisp_t plisp_builtin_newline(plisp_t *clos, size_t nargs) {
     plisp_assert(nargs == 0);
     putchar('\n');
-    return plisp_nil;
+    return plisp_unspec;
 }

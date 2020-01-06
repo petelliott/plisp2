@@ -42,17 +42,15 @@ static plisp_t do_define(plisp_t form) {
                     plisp_cons(
                         plisp_cdr(plisp_car(plisp_cdr(form))),
                         plisp_cdr(plisp_cdr(form))))));
-
-        return plisp_car(plisp_car(plisp_cdr(form)));
     } else {
         // value define
         plisp_toplevel_define(
             plisp_car(plisp_cdr(form)),
             plisp_toplevel_eval(
                 plisp_car(plisp_cdr(plisp_cdr(form)))));
-        return plisp_car(plisp_cdr(form));
     }
 
+    return plisp_unspec;
 }
 
 plisp_t plisp_toplevel_eval(plisp_t form) {

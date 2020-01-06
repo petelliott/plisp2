@@ -29,8 +29,11 @@ int main(int argc, char *argv[]) {
                 putchar('\n');
                 break;
             }
-            plisp_c_write(stdout, plisp_toplevel_eval(obj));
-            putchar('\n');
+            obj = plisp_toplevel_eval(obj);
+            if (obj != plisp_unspec) {
+                plisp_c_write(stdout, obj);
+                putchar('\n');
+            }
         }
     }
 
