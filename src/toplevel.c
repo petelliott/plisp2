@@ -34,6 +34,11 @@ plisp_t *plisp_toplevel_ref(plisp_t sym) {
 
 static plisp_t do_define(plisp_t form) {
     if (plisp_c_consp(plisp_car(plisp_cdr(form)))) {
+        // predifine as bound to avoid generating the runtime
+        // check for bound variables when recursing
+        plisp_toplevel_define(
+            plisp_car(plisp_car(plisp_cdr(form))),
+            plisp_unspec);
         // function define
         plisp_toplevel_define(
             plisp_car(plisp_car(plisp_cdr(form))),

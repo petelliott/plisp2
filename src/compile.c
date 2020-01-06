@@ -199,15 +199,19 @@ static void plisp_compile_ref(struct lambda_state *_state, plisp_t sym) {
     jit_ldi(JIT_R0, tl_slot);
 
     #ifndef PLISP_UNSAFE
-    push(_state, JIT_R0);
+    // don't generate a runtime check if the variable is bound at
+    // compile time
+    if (*tl_slot == plisp_unbound) {
+        push(_state, JIT_R0);
 
-    // assert that the variable we reference is bound
-    jit_prepare();
-    jit_pushargr(JIT_R0);
-    jit_pushargi(sym);
-    jit_finishi(assert_bound);
+        // assert that the variable we reference is bound
+        jit_prepare();
+        jit_pushargr(JIT_R0);
+        jit_pushargi(sym);
+        jit_finishi(assert_bound);
 
-    pop(_state, JIT_R0);
+        pop(_state, JIT_R0);
+    }
     #endif
 }
 
