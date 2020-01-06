@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <gmp.h>
 
 // we have 4 bits, each plisp object is aligned to 16 byte boundaries.
 // this is at the lowest 4 bits of each word. a cons with a null
@@ -122,5 +123,43 @@ void *plisp_custom_data(plisp_t val);
 
 plisp_t plisp_make_consbox(plisp_t val);
 plisp_t *plisp_get_consbox(plisp_t consbox);
+
+enum plisp_number_type {
+    NUM_BIGINT,
+    NUM_RATIONAL,
+    NUM_REAL,
+    NUM_COMPLEX,
+};
+
+// scheme numerical tower
+struct plisp_number {
+    uint64_t type;
+    union {
+        double d;
+        struct {
+            float real;
+            float complex;
+        } c;
+        mpz_t *i;
+        mpq_t *r;
+    } value;
+};
+
+bool plisp_c_numberp(plisp_t obj);
+bool plisp_c_integerp(plisp_t obj);
+bool plisp_c_rationalp(plisp_t obj);
+bool plisp_c_realp(plisp_t obj);
+bool plisp_c_complexp(plisp_t obj);
+
+plisp_t plisp_fixnum_to_bignum(int64_t val);
+plisp_t plisp_make_rational(plisp_t num, plisp_t denom);
+plisp_t plisp_make_real(double real);
+
+plisp_t plisp_add(plisp_t a, plisp_t b);
+plisp_t plisp_sub(plisp_t a, plisp_t b);
+plisp_t plisp_mul(plisp_t a, plisp_t b);
+plisp_t plisp_div(plisp_t a, plisp_t b);
+plisp_t plisp_mod(plisp_t a, plisp_t b);
+plisp_t plisp_pow(plisp_t a, plisp_t b);
 
 #endif
