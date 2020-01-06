@@ -238,3 +238,46 @@ plisp_t *plisp_get_consbox(plisp_t consbox) {
     struct plisp_cons *cellptr = (void *) (consbox & ~LOTAGS);
     return &(cellptr->car);
 }
+
+bool plisp_c_numberp(plisp_t obj) {
+    return (obj & LOTAGS) == LT_NUMBER || plisp_c_fixnump(obj);
+}
+
+bool plisp_c_integerp(plisp_t obj) {
+    struct plisp_number *objptr = (void *) (obj & ~LOTAGS);
+
+    return plisp_c_numberp(obj) && (plisp_c_fixnump(obj) ||
+                                    objptr->type == NUM_BIGINT);
+}
+
+bool plisp_c_rationalp(plisp_t obj) {
+    struct plisp_number *objptr = (void *) (obj & ~LOTAGS);
+
+    return plisp_c_integerp(obj) || (plisp_c_numberp(obj) &&
+                                     objptr->type == NUM_RATIONAL);
+}
+
+bool plisp_c_realp(plisp_t obj) {
+    struct plisp_number *objptr = (void *) (obj & ~LOTAGS);
+
+    return plisp_c_rationalp(obj) || (plisp_c_numberp(obj) &&
+                                      objptr->type == NUM_REAL);
+}
+
+bool plisp_c_complexp(plisp_t obj) {
+    struct plisp_number *objptr = (void *) (obj & ~LOTAGS);
+
+    return plisp_c_rationalp(obj) || (plisp_c_numberp(obj) &&
+                                      objptr->type == NUM_COMPLEX);
+}
+
+plisp_t plisp_fixnum_to_bignum(plisp_t val);
+plisp_t plisp_make_rational(plisp_t num, plisp_t denom);
+plisp_t plisp_make_real(double real);
+
+plisp_t plisp_add(plisp_t a, plisp_t b);
+plisp_t plisp_sub(plisp_t a, plisp_t b);
+plisp_t plisp_mul(plisp_t a, plisp_t b);
+plisp_t plisp_div(plisp_t a, plisp_t b);
+plisp_t plisp_mod(plisp_t a, plisp_t b);
+plisp_t plisp_pow(plisp_t a, plisp_t b);

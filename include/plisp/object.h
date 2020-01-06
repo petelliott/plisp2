@@ -151,7 +151,7 @@ bool plisp_c_rationalp(plisp_t obj);
 bool plisp_c_realp(plisp_t obj);
 bool plisp_c_complexp(plisp_t obj);
 
-plisp_t plisp_fixnum_to_bignum(int64_t val);
+plisp_t plisp_fixnum_to_bignum(plisp_t val);
 plisp_t plisp_make_rational(plisp_t num, plisp_t denom);
 plisp_t plisp_make_real(double real);
 
