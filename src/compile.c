@@ -107,8 +107,12 @@ static void plisp_compile_call(struct lambda_state *_state, plisp_t expr) {
     pop(_state, JIT_R0);
     #endif
 
-    jit_note(__FILE__, __LINE__);
+    // inline closure call (change whenever plisp_closure changes)
+    jit_andi(JIT_R0, JIT_R0, ~LOTAGS);
+    jit_ldr(JIT_R1, JIT_R0);
+
     jit_prepare();
+    jit_pushargr(JIT_R1); // push closure data
     jit_pushargi(nargs);
     for (int i = 0; i < nargs; ++i) {
         jit_ldxi(JIT_R1, JIT_FP, args[i]);
@@ -117,12 +121,9 @@ static void plisp_compile_call(struct lambda_state *_state, plisp_t expr) {
     for (int i = 0; i < nargs; ++i) {
         pop(_state, -1);
     }
-    // inline closure call (change whenever plisp_closure changes)
-    jit_andi(JIT_R0, JIT_R0, ~LOTAGS);
     jit_ldxi(JIT_R0, JIT_R0, sizeof(struct plisp_closure_data *));
     jit_finishr(JIT_R0);
     jit_retval(JIT_R0);
-    jit_note(__FILE__, __LINE__);
 }
 
 static void plisp_compile_if(struct lambda_state *_state, plisp_t expr) {
@@ -180,7 +181,7 @@ static void plisp_compile_ref(struct lambda_state *_state, plisp_t sym) {
     ssize_t closure_idx = plisp_get_closure(_state, sym);
     if (closure_idx != -1) {
         jit_ldxi(JIT_R0, JIT_FP, _state->closure_on_stack);
-        jit_ldxi(JIT_R0, JIT_R0, closure_idx);
+        jit_ldxi(JIT_R0, JIT_R0, closure_idx * sizeof(plisp_t));
         return;
     }
 
@@ -280,6 +281,9 @@ static plisp_fn_t plisp_compile_lambda_context(
     assert(plisp_car(lambda) == lambda_sym);
 
     jit_prolog();
+
+    jit_getarg(JIT_R0, jit_arg());
+    _state->closure_on_stack = push(_state, JIT_R0);
 
     jit_getarg(JIT_R0, jit_arg());
     int nargs = push(_state, JIT_R0);

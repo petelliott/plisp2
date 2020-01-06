@@ -41,7 +41,8 @@ void plisp_define_builtin(const char *name, plisp_fn_t fun) {
         plisp_make_closure(NULL, fun));
 }
 
-plisp_t plisp_builtin_plus(size_t nargs, plisp_t a, plisp_t b, ...) {
+plisp_t plisp_builtin_plus(plisp_t *clos, size_t nargs, plisp_t a,
+                           plisp_t b, ...) {
     plisp_assert(plisp_c_fixnump(a));
     plisp_assert(plisp_c_fixnump(b));
     plisp_assert(nargs >= 2);
@@ -62,7 +63,8 @@ plisp_t plisp_builtin_plus(size_t nargs, plisp_t a, plisp_t b, ...) {
     return sum;
 }
 
-plisp_t plisp_builtin_minus(size_t nargs, plisp_t a, plisp_t b, ...) {
+plisp_t plisp_builtin_minus(plisp_t *clos, size_t nargs, plisp_t a,
+                            plisp_t b, ...) {
     plisp_assert(plisp_c_fixnump(a));
     plisp_assert(plisp_c_fixnump(b));
     plisp_assert(nargs >= 2);
@@ -83,26 +85,28 @@ plisp_t plisp_builtin_minus(size_t nargs, plisp_t a, plisp_t b, ...) {
     return sum;
 }
 
-plisp_t plisp_builtin_cons(size_t nargs, plisp_t car, plisp_t cdr) {
+plisp_t plisp_builtin_cons(plisp_t *clos, size_t nargs, plisp_t car,
+                           plisp_t cdr) {
     plisp_assert(nargs == 2);
     return plisp_cons(car, cdr);
 }
 
-plisp_t plisp_builtin_car(size_t nargs, plisp_t cell) {
+plisp_t plisp_builtin_car(plisp_t *clos, size_t nargs, plisp_t cell) {
     plisp_assert(nargs == 1);
     return plisp_car(cell);
 }
 
-plisp_t plisp_builtin_cdr(size_t nargs, plisp_t cell) {
+plisp_t plisp_builtin_cdr(plisp_t *clos, size_t nargs, plisp_t cell) {
     plisp_assert(nargs == 1);
     return plisp_car(cell);
 }
 
 plisp_t plisp_c_reverse(plisp_t lst) {
-    return plisp_builtin_reverse(2, lst, plisp_nil);
+    return plisp_builtin_reverse(NULL, 2, lst, plisp_nil);
 }
 
-plisp_t plisp_builtin_reverse(size_t nargs, plisp_t lst, plisp_t onto) {
+plisp_t plisp_builtin_reverse(plisp_t *clos, size_t nargs,
+                              plisp_t lst, plisp_t onto) {
     plisp_assert(nargs == 1 || nargs == 2);
 
     if (plisp_c_nullp(lst)) {
@@ -113,11 +117,11 @@ plisp_t plisp_builtin_reverse(size_t nargs, plisp_t lst, plisp_t onto) {
         onto = plisp_nil;
     }
 
-    return plisp_builtin_reverse(2, plisp_cdr(lst),
+    return plisp_builtin_reverse(NULL, 2, plisp_cdr(lst),
                                  plisp_cons(plisp_car(lst), onto));
 }
 
-plisp_t plisp_builtin_list(size_t nargs, ...) {
+plisp_t plisp_builtin_list(plisp_t *clos, size_t nargs, ...) {
     va_list vl;
     va_start(vl, nargs);
 
@@ -131,7 +135,7 @@ plisp_t plisp_builtin_list(size_t nargs, ...) {
     return plisp_c_reverse(lst);
 }
 
-plisp_t plisp_builtin_not(size_t nargs, plisp_t obj) {
+plisp_t plisp_builtin_not(plisp_t *clos, size_t nargs, plisp_t obj) {
     plisp_assert(nargs == 1);
     if (obj == plisp_make_bool(false)) {
         return plisp_make_bool(true);
@@ -140,17 +144,17 @@ plisp_t plisp_builtin_not(size_t nargs, plisp_t obj) {
     }
 }
 
-plisp_t plisp_builtin_nullp(size_t nargs, plisp_t obj) {
+plisp_t plisp_builtin_nullp(plisp_t *clos, size_t nargs, plisp_t obj) {
     plisp_assert(nargs == 1);
     return plisp_make_bool(plisp_c_nullp(obj));
 }
 
-plisp_t plisp_builtin_eq(size_t nargs, plisp_t a, plisp_t b) {
+plisp_t plisp_builtin_eq(plisp_t *clos, size_t nargs, plisp_t a, plisp_t b) {
     plisp_assert(nargs == 2);
     return plisp_make_bool(a == b);
 }
 
-plisp_t plisp_builtin_lt(size_t nargs, plisp_t a, plisp_t b) {
+plisp_t plisp_builtin_lt(plisp_t *clos, size_t nargs, plisp_t a, plisp_t b) {
     plisp_assert(nargs == 2);
     return plisp_make_bool(a < b);
 }
@@ -165,18 +169,18 @@ size_t plisp_c_length(plisp_t lst) {
     return 1 + plisp_c_length(plisp_cdr(lst));
 }
 
-plisp_t plisp_builtin_length(size_t nargs, plisp_t lst) {
+plisp_t plisp_builtin_length(plisp_t *clos, size_t nargs, plisp_t lst) {
     plisp_assert(nargs == 1);
     return plisp_make_fixnum(plisp_c_length(lst));
 }
 
-plisp_t plisp_builtin_display(size_t nargs, plisp_t obj) {
+plisp_t plisp_builtin_display(plisp_t *clos, size_t nargs, plisp_t obj) {
     plisp_assert(nargs == 1);
     plisp_c_write(stdout, obj);
     return plisp_nil;
 }
 
-plisp_t plisp_builtin_newline(size_t nargs) {
+plisp_t plisp_builtin_newline(plisp_t *clos, size_t nargs) {
     plisp_assert(nargs == 0);
     putchar('\n');
     return plisp_nil;
