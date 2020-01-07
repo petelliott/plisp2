@@ -151,9 +151,15 @@ bool plisp_c_rationalp(plisp_t obj);
 bool plisp_c_realp(plisp_t obj);
 bool plisp_c_complexp(plisp_t obj);
 
-plisp_t plisp_fixnum_to_bignum(plisp_t val);
-plisp_t plisp_make_rational(plisp_t num, plisp_t denom);
-plisp_t plisp_make_real(double real);
+mpz_t **plisp_number_bigint(plisp_t obj);
+mpq_t **plisp_number_rational(plisp_t obj);
+double *plisp_number_real(plisp_t obj);
+
+plisp_t plisp_make_number(enum plisp_number_type type);
+plisp_t plisp_make_bigint(plisp_t fixnum);
+plisp_t plisp_make_rational(plisp_t integer);
+plisp_t plisp_make_real(plisp_t rational);
+
 
 plisp_t plisp_add(plisp_t a, plisp_t b);
 plisp_t plisp_sub(plisp_t a, plisp_t b);

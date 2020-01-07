@@ -3,6 +3,7 @@
 #include <plisp/saftey.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdarg.h>
 
 bool plisp_c_fixnump(plisp_t val) {
     return (val & LOTAGS) == LT_FIXNUM;
@@ -271,9 +272,81 @@ bool plisp_c_complexp(plisp_t obj) {
                                       objptr->type == NUM_COMPLEX);
 }
 
-plisp_t plisp_fixnum_to_bignum(plisp_t val);
-plisp_t plisp_make_rational(plisp_t num, plisp_t denom);
-plisp_t plisp_make_real(double real);
+mpz_t **plisp_number_bigint(plisp_t obj) {
+    struct plisp_number *numptr = (void *) (obj & ~LOTAGS);
+
+    plisp_assert(numptr->type == NUM_BIGINT);
+    return &(numptr->value.i);
+}
+
+mpq_t **plisp_number_rational(plisp_t obj) {
+    struct plisp_number *numptr = (void *) (obj & ~LOTAGS);
+
+    plisp_assert(numptr->type == NUM_RATIONAL);
+    return &(numptr->value.r);
+}
+
+double *plisp_number_real(plisp_t obj) {
+    struct plisp_number *numptr = (void *) (obj & ~LOTAGS);
+
+    plisp_assert(numptr->type == NUM_REAL);
+    return &(numptr->value.d);
+}
+
+plisp_t plisp_make_number(enum plisp_number_type type) {
+    plisp_t num = plisp_alloc_obj(LT_NUMBER);
+    struct plisp_number *numptr = (void *) (num & ~LOTAGS);
+
+    numptr->type = type;
+    return num;
+}
+
+plisp_t plisp_make_bigint(plisp_t fixnum) {
+    plisp_assert(plisp_c_fixnump(fixnum));
+
+    plisp_t num = plisp_make_number(NUM_BIGINT);
+
+    mpz_t **i = plisp_number_bigint(num);
+    *i = malloc(sizeof(mpz_t));
+    mpz_init(**i);
+    mpz_set_si(**i, plisp_fixnum_value(fixnum));
+
+    return num;
+}
+
+plisp_t plisp_make_rational(plisp_t integer) {
+    plisp_assert(plisp_c_integerp(integer));
+
+    plisp_t num = plisp_make_number(NUM_RATIONAL);
+
+    if (plisp_c_fixnump(integer)) {
+        integer = plisp_make_bigint(integer);
+    }
+
+    mpq_t **r = plisp_number_rational(num);
+    *r = malloc(sizeof(mpq_t));
+    mpq_init(**r);
+    mpq_set_num(**r, **plisp_number_bigint(integer));
+
+    return num;
+}
+
+plisp_t plisp_make_real(plisp_t rational) {
+    plisp_assert(plisp_c_rationalp(rational));
+
+    plisp_t num = plisp_make_number(NUM_REAL);
+    double *d = plisp_number_real(num);
+
+    if (plisp_c_fixnump(rational)) {
+        *d = plisp_fixnum_value(rational);
+    } else if (plisp_c_integerp(rational)) {
+        *d = mpz_get_d(**plisp_number_bigint(rational));
+    } else {
+        *d = mpq_get_d(**plisp_number_rational(rational));
+    }
+
+    return num;
+}
 
 plisp_t plisp_add(plisp_t a, plisp_t b);
 plisp_t plisp_sub(plisp_t a, plisp_t b);
