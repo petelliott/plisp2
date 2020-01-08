@@ -125,6 +125,7 @@ plisp_t plisp_make_consbox(plisp_t val);
 plisp_t *plisp_get_consbox(plisp_t consbox);
 
 enum plisp_number_type {
+    NUM_FIXNUM, // never used in struct, but used by promotion
     NUM_BIGINT,
     NUM_RATIONAL,
     NUM_REAL,
@@ -159,7 +160,6 @@ plisp_t plisp_make_number(enum plisp_number_type type);
 plisp_t plisp_make_bigint(plisp_t fixnum);
 plisp_t plisp_make_rational(plisp_t integer);
 plisp_t plisp_make_real(plisp_t rational);
-
 
 plisp_t plisp_add(plisp_t a, plisp_t b);
 plisp_t plisp_sub(plisp_t a, plisp_t b);

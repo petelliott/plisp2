@@ -4,6 +4,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <math.h>
+#include <limits.h>
 
 bool plisp_c_fixnump(plisp_t val) {
     return (val & LOTAGS) == LT_FIXNUM;
@@ -348,7 +350,98 @@ plisp_t plisp_make_real(plisp_t rational) {
     return num;
 }
 
-plisp_t plisp_add(plisp_t a, plisp_t b);
+static plisp_t promote(plisp_t obj, enum plisp_number_type type) {
+    if (type == NUM_FIXNUM) {
+        plisp_assert(plisp_c_fixnump(obj));
+        return obj;
+    } else if (type == NUM_BIGINT) {
+        plisp_assert(plisp_c_integerp(obj));
+        if (plisp_c_fixnump(obj)) {
+            return plisp_make_bigint(obj);
+        } else {
+            return obj;
+        }
+    } else if (type == NUM_RATIONAL) {
+        plisp_assert(plisp_c_rationalp(obj));
+        if (plisp_c_integerp(obj)) {
+            return plisp_make_rational(obj);
+        } else {
+            return obj;
+        }
+    } else if (type == NUM_REAL) {
+        plisp_assert(plisp_c_realp(obj));
+        if (plisp_c_rationalp(obj)) {
+            return plisp_make_real(obj);
+        } else {
+            return obj;
+        }
+    }
+    plisp_assert(false);
+    return plisp_nil;
+}
+
+enum plisp_number_type gettype(plisp_t obj) {
+    plisp_assert(plisp_c_numberp(obj));
+
+    if (plisp_c_fixnump(obj)) {
+        return NUM_FIXNUM;
+    } else {
+        struct plisp_number *numptr = (void *) (obj & ~LOTAGS);
+        return numptr->type;
+    }
+}
+
+
+static enum plisp_number_type promote_for_op(
+    plisp_t a, plisp_t b,
+    plisp_t *aprime, plisp_t *bprime) {
+
+    // fix this when it breaks
+    enum plisp_number_type t = fmax(gettype(a), gettype(b));
+
+    *aprime = promote(a, t);
+    *bprime = promote(b, t);
+
+    return t;
+}
+
+plisp_t plisp_add(plisp_t a, plisp_t b) {
+
+    plisp_t aprime, bprime;
+    enum plisp_number_type t = promote_for_op(a, b, &aprime, &bprime);
+
+    if (t == NUM_FIXNUM) {
+        int64_t av = plisp_fixnum_value(aprime);
+        int64_t bv = plisp_fixnum_value(bprime);
+        int64_t val = av + bv;
+        // detect overflow
+        if (val & 0xf000000000000000ul) {
+            return plisp_add(promote(aprime, NUM_BIGINT), bprime);
+        } else {
+            return val;
+        }
+    } else if (t == NUM_BIGINT) {
+        plisp_t target = plisp_make_bigint(0);
+        mpz_add(**plisp_number_bigint(target),
+                **plisp_number_bigint(aprime),
+                **plisp_number_bigint(bprime));
+        return target;
+    } else if (t == NUM_RATIONAL) {
+        plisp_t target = plisp_make_rational(0);
+        mpq_add(**plisp_number_rational(target),
+                **plisp_number_rational(aprime),
+                **plisp_number_rational(bprime));
+        return target;
+    } else if (t == NUM_REAL) {
+        plisp_t target = plisp_make_real(0);
+        *plisp_number_real(target) =
+            *plisp_number_real(aprime) + *plisp_number_real(aprime);
+        return target;
+    }
+    plisp_assert(false);
+    return plisp_nil;
+}
+
 plisp_t plisp_sub(plisp_t a, plisp_t b);
 plisp_t plisp_mul(plisp_t a, plisp_t b);
 plisp_t plisp_div(plisp_t a, plisp_t b);
