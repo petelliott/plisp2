@@ -9,7 +9,6 @@ struct obj_allocs {
     size_t allocated[MAX_ALLOC_PAGE_SIZE/(sizeof(size_t)*8)];
     size_t grey_set[MAX_ALLOC_PAGE_SIZE/(sizeof(size_t)*8)];
     size_t black_set[MAX_ALLOC_PAGE_SIZE/(sizeof(size_t)*8)];
-    size_t permanent[MAX_ALLOC_PAGE_SIZE/(sizeof(size_t)*8)];
     size_t num_objs;
     struct plisp_cons *objs;
     struct obj_allocs *next;
@@ -66,7 +65,6 @@ static struct obj_allocs *make_obj_allocs(struct obj_allocs *next) {
     memset(allocs->allocated, 0, sizeof(allocs->allocated));
     memset(allocs->grey_set, 0, sizeof(allocs->grey_set));
     memset(allocs->black_set, 0, sizeof(allocs->black_set));
-    memset(allocs->permanent, 0, sizeof(allocs->permanent));
 
     allocs->num_objs = MAX_ALLOC_PAGE_SIZE; // TODO: maybe set this dynamically
     allocs->objs = malloc(allocs->num_objs * sizeof(struct plisp_cons));
@@ -95,27 +93,9 @@ bool plisp_heap_allocated(plisp_t obj) {
         || plisp_c_customp(obj);
 }
 
-static void plisp_gc_set_permanent(plisp_t obj, bool flag) {
-    assert(plisp_heap_allocated(obj));
-    for (struct obj_allocs *allocs = conspool; allocs != NULL;
-         allocs = allocs->next) {
-
-        if (obj >= (plisp_t) allocs->objs
-            && obj < (plisp_t) (allocs->objs + allocs->num_objs)) {
-
-            size_t idx = ((obj & ~LOTAGS) - (uintptr_t) allocs->objs)
-                / sizeof(struct plisp_cons);
-            set_bit(allocs->permanent, idx, flag);
-            return;
-        }
-    }
-    assert(false);
-}
+static plisp_t perm_root = plisp_nil;
 
 void plisp_gc_permanent(plisp_t obj) {
-    plisp_gc_set_permanent(obj, true);
-}
-
-void plisp_gc_nopermanent(plisp_t obj) {
-    plisp_gc_set_permanent(obj, false);
+    assert(plisp_heap_allocated(obj));
+    perm_root = plisp_cons(obj, perm_root);
 }
