@@ -4,7 +4,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#define MAX_ALLOC_PAGE_SIZE 8192
+#define MAX_ALLOC_PAGE_SIZE 64
 
 struct obj_allocs {
     size_t allocated[MAX_ALLOC_PAGE_SIZE/(sizeof(size_t)*8)];
@@ -198,11 +198,14 @@ size_t plisp_collect_garbage(void) {
 plisp_t plisp_alloc_obj(uintptr_t tags, bool freecdr) {
     void *ptr = allocate_or_null(conspool, freecdr);
     if (ptr == NULL) {
-        //TODO garbage collect
-        //plisp_collect_garbage();
-        conspool = make_obj_allocs(conspool);
+        //fprintf(stderr, "collected %lu objects\n", plisp_collect_garbage());
+        plisp_collect_garbage();
         ptr = allocate_or_null(conspool, freecdr);
-        assert(ptr != NULL);
+        if (ptr == NULL) {
+            conspool = make_obj_allocs(conspool);
+            ptr = allocate_or_null(conspool, freecdr);
+            assert(ptr != NULL);
+        }
     }
     return ((plisp_t) ptr) | tags;
 }
