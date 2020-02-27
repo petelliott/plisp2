@@ -19,7 +19,7 @@ bin:
 unsafe: CFLAGS +=-DPLISP_UNSAFE
 unsafe: clean plisp
 
-debug: CFLAGS=-Wall -g -Iinclude
+debug: CFLAGS=-Wall -g -Iinclude -O2
 debug: clean plisp
 
 clean:

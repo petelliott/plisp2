@@ -48,7 +48,7 @@ bool plisp_c_consp(plisp_t val) {
 }
 
 plisp_t plisp_cons(plisp_t car, plisp_t cdr) {
-    plisp_t cell = plisp_alloc_obj(LT_CONS);
+    plisp_t cell = plisp_alloc_obj(LT_CONS, false);
     struct plisp_cons *cellptr = (void *) (cell & ~LOTAGS);
     cellptr->car = car;
     cellptr->cdr = cdr;
@@ -77,7 +77,7 @@ bool plisp_c_closurep(plisp_t val) {
 }
 
 plisp_t plisp_make_closure(plisp_t *data, plisp_fn_t fun) {
-    plisp_t closure = plisp_alloc_obj(LT_CLOS);
+    plisp_t closure = plisp_alloc_obj(LT_CLOS, true);
     struct plisp_closure *clptr = (void *) (closure & ~LOTAGS);
     clptr->data = data;
     clptr->fun = fun;
@@ -119,7 +119,7 @@ plisp_t plisp_make_vector(enum plisp_vec_type type, uint8_t
                           elem_width, uint16_t flags, uint32_t len,
                           plisp_t initial_element, bool use_ie) {
 
-    plisp_t vector = plisp_alloc_obj(LT_VECTOR);
+    plisp_t vector = plisp_alloc_obj(LT_VECTOR, true);
     struct plisp_vector *vecptr = (void *) (vector & ~LOTAGS);
 
     vecptr->type       = type;
@@ -208,7 +208,7 @@ bool plisp_c_customp(plisp_t val) {
 }
 
 plisp_t plisp_make_custom(plisp_t typesym, void *data) {
-    plisp_t custom = plisp_alloc_obj(LT_CUSTOM);
+    plisp_t custom = plisp_alloc_obj(LT_CUSTOM, true);
     struct plisp_custom *customptr = (void *) (custom & ~LOTAGS);
     customptr->typesym = typesym;
     customptr->data = data;

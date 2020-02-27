@@ -4,7 +4,11 @@
 #include <plisp/object.h>
 
 
-plisp_t plisp_alloc_obj(uintptr_t tags);
+void plisp_init_gc(void);
+
+size_t plisp_collect_garbage(void);
+
+plisp_t plisp_alloc_obj(uintptr_t tags, bool freecdr);
 
 bool plisp_heap_allocated(plisp_t obj);
 

@@ -4,6 +4,7 @@
 #include <plisp/write.h>
 #include <plisp/toplevel.h>
 #include <plisp/saftey.h>
+#include <plisp/gc.h>
 #include <stdarg.h>
 
 void plisp_init_builtin(void) {
@@ -33,6 +34,8 @@ void plisp_init_builtin(void) {
     plisp_define_builtin("write", plisp_builtin_write);
     plisp_define_builtin("println", plisp_builtin_println);
     plisp_define_builtin("newline", plisp_builtin_newline);
+
+    plisp_define_builtin("collect-garbage", plisp_builtin_collect_garbage);
 
     #pragma GCC diagnostic pop
 }
@@ -209,4 +212,9 @@ plisp_t plisp_builtin_newline(plisp_t *clos, size_t nargs) {
     plisp_assert(nargs == 0);
     putchar('\n');
     return plisp_unspec;
+}
+
+plisp_t plisp_builtin_collect_garbage(plisp_t *clos, size_t nargs) {
+    plisp_assert(nargs == 0);
+    return plisp_make_fixnum(plisp_collect_garbage());
 }

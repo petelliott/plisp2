@@ -4,11 +4,13 @@
 #include <plisp/compile.h>
 #include <plisp/toplevel.h>
 #include <plisp/builtin.h>
+#include <plisp/gc.h>
 #include <stdio.h>
 #include <assert.h>
 
 
 int main(int argc, char *argv[]) {
+    plisp_init_gc();
     plisp_init_reader();
     plisp_init_compiler(argv[0]);
     plisp_init_toplevel();

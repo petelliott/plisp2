@@ -66,8 +66,8 @@ bool plisp_c_nullp(plisp_t val);
 typedef plisp_t (*plisp_fn_t)();
 
 struct plisp_closure {
-    void *data;
     plisp_fn_t fun;
+    void *data;
 };
 
 bool plisp_c_closurep(plisp_t val);

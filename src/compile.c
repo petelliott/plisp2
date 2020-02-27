@@ -6,6 +6,7 @@
 #include <plisp/gc.h>
 #include <plisp/toplevel.h>
 #include <plisp/builtin.h>
+#include <plisp/object.h>
 #include <assert.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -129,7 +130,7 @@ static void plisp_compile_call(struct lambda_state *_state, plisp_t expr) {
 
     // inline closure call (change whenever plisp_closure changes)
     jit_andi(JIT_R0, JIT_R0, ~LOTAGS);
-    jit_ldr(JIT_R1, JIT_R0);
+    jit_ldxi(JIT_R1, JIT_R0, sizeof(plisp_fn_t));
 
     jit_prepare();
     jit_pushargr(JIT_R1); // push closure data
@@ -141,7 +142,7 @@ static void plisp_compile_call(struct lambda_state *_state, plisp_t expr) {
     for (int i = 0; i < nargs; ++i) {
         pop(_state, -1);
     }
-    jit_ldxi(JIT_R0, JIT_R0, sizeof(struct plisp_closure_data *));
+    jit_ldr(JIT_R0, JIT_R0);
     jit_finishr(JIT_R0);
     jit_retval(JIT_R0);
 }
