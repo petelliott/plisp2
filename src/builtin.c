@@ -36,6 +36,7 @@ void plisp_init_builtin(void) {
     plisp_define_builtin("newline", plisp_builtin_newline);
 
     plisp_define_builtin("collect-garbage", plisp_builtin_collect_garbage);
+    plisp_define_builtin("object-addr", plisp_builtin_object_addr);
 
     #pragma GCC diagnostic pop
 }
@@ -217,4 +218,10 @@ plisp_t plisp_builtin_newline(plisp_t *clos, size_t nargs) {
 plisp_t plisp_builtin_collect_garbage(plisp_t *clos, size_t nargs) {
     plisp_assert(nargs == 0);
     return plisp_make_fixnum(plisp_collect_garbage());
+}
+
+plisp_t plisp_builtin_object_addr(plisp_t *clos, size_t nargs, plisp_t obj) {
+    plisp_assert(nargs == 1);
+    fprintf(stderr, "%lx\n", obj);
+    return plisp_unspec;
 }

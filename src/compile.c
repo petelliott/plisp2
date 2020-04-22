@@ -202,7 +202,7 @@ static void plisp_compile_ref(struct lambda_state *_state, plisp_t sym) {
     ssize_t closure_idx = plisp_get_closure(_state, sym);
     if (closure_idx != -1) {
         jit_ldxi(JIT_R0, JIT_FP, _state->closure_on_stack);
-        jit_ldxi(JIT_R0, JIT_R0, closure_idx * sizeof(plisp_t));
+        jit_ldxi(JIT_R0, JIT_R0, (closure_idx+1) * sizeof(plisp_t));
         return;
     }
 
@@ -238,16 +238,20 @@ static void plisp_compile_gen_closure(struct lambda_state *_state,
     }
 
     jit_prepare();
-    jit_pushargi(num_elems * sizeof(plisp_t));
+    jit_pushargi((num_elems+1) * sizeof(plisp_t));
     jit_finishi(malloc);
     jit_retval(JIT_R1); //R1 holds the closure data
+
+    //store the length at the start
+    jit_movi(JIT_R0, (jit_word_t) num_elems);
+    jit_str(JIT_R1, JIT_R0);
 
     size_t *off;
     plisp_t idx = 0;
     JLF(off, closure, idx);
     while (off != NULL) {
         plisp_compile_ref(_state, idx);
-        jit_stxi(*off * sizeof(plisp_t), JIT_R1, JIT_R0);
+        jit_stxi((*off+1) * sizeof(plisp_t), JIT_R1, JIT_R0);
         JLN(off, closure, idx);
     }
 }

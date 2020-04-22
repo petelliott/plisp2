@@ -32,5 +32,6 @@ plisp_t plisp_builtin_println(plisp_t *clos, size_t nargs, ...);
 plisp_t plisp_builtin_newline(plisp_t *clos, size_t nargs);
 
 plisp_t plisp_builtin_collect_garbage(plisp_t *clos, size_t nargs);
+plisp_t plisp_builtin_object_addr(plisp_t *clos, size_t nargs, plisp_t obj);
 
 #endif

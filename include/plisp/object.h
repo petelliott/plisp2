@@ -67,11 +67,16 @@ typedef plisp_t (*plisp_fn_t)();
 
 struct plisp_closure {
     plisp_fn_t fun;
-    void *data;
+    struct plisp_closure_data *data;
+};
+
+struct plisp_closure_data {
+    size_t length;
+    plisp_t objs[];
 };
 
 bool plisp_c_closurep(plisp_t val);
-plisp_t plisp_make_closure(plisp_t *data, plisp_fn_t fun);
+plisp_t plisp_make_closure(struct plisp_closure_data *data, plisp_fn_t fun);
 struct plisp_closure_data *plisp_closure_data(plisp_t closure);
 plisp_fn_t plisp_closure_fun(plisp_t closure);
 

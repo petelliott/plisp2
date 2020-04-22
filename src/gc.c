@@ -4,7 +4,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#define MAX_ALLOC_PAGE_SIZE 64
+#define MAX_ALLOC_PAGE_SIZE 8192
 
 struct obj_allocs {
     size_t allocated[MAX_ALLOC_PAGE_SIZE/(sizeof(size_t)*8)];
@@ -132,7 +132,18 @@ static void trace_object(plisp_t obj) {
     } else if (plisp_c_customp(obj)) {
         trace_object(plisp_custom_typesym(obj));
     } else if (plisp_c_closurep(obj)) {
-        //TODO: this is hard
+        struct plisp_closure_data *data = plisp_closure_data(obj);
+        if (data != NULL) {
+
+            fprintf(stderr, "-> %lx\n", obj);
+            fprintf(stderr, ":> %p\n", data);
+            fprintf(stderr, "length: %lu\n", data->length);
+            for (size_t i = 0; i < data->length; ++i) {
+                plisp_c_write(stderr, data->objs[i]);
+                fputc('\n', stderr);
+                trace_object(data->objs[i]);
+            }
+        }
     } else if (plisp_c_symbolp(obj)) {
         //nothing to do here
     } else if (plisp_c_vectorp(obj)) {

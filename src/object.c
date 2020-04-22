@@ -3,6 +3,7 @@
 #include <plisp/saftey.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 bool plisp_c_fixnump(plisp_t val) {
     return (val & LOTAGS) == LT_FIXNUM;
@@ -76,9 +77,11 @@ bool plisp_c_closurep(plisp_t val) {
     return (val & LOTAGS) == LT_CLOS;
 }
 
-plisp_t plisp_make_closure(plisp_t *data, plisp_fn_t fun) {
+plisp_t plisp_make_closure(struct plisp_closure_data *data, plisp_fn_t fun) {
     plisp_t closure = plisp_alloc_obj(LT_CLOS, true);
     struct plisp_closure *clptr = (void *) (closure & ~LOTAGS);
+
+    fprintf(stderr, "%p, %p\n", data, fun);
     clptr->data = data;
     clptr->fun = fun;
 
