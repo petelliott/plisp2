@@ -41,11 +41,26 @@ plisp_t plisp_intern(plisp_t sym) {
     return sym;
 }
 
+// skips over comments an whitespace, ch will be set to the first
+// non-comment, non-whitespace character
+static void skip_cws(FILE *f, int *ch) {
+    do {
+        *ch = fgetc(f);
+    } while (isspace(*ch));
+
+    if (*ch == ';') {
+        do {
+            *ch = fgetc(f);
+        } while (*ch != '\n');
+
+        // recursion, because we are a scheme compiler
+        skip_cws(f, ch);
+    }
+}
+
 static plisp_t plisp_read_list(FILE *f) {
     int ch;
-    do {
-        ch = fgetc(f);
-    } while (isspace(ch));
+    skip_cws(f, &ch);
 
     if (ch == EOF) {
         fprintf(stderr, "error while parsing list: unexpected EOF\n");
@@ -56,9 +71,7 @@ static plisp_t plisp_read_list(FILE *f) {
         return plisp_nil;
     } else if (ch == '.') {
         plisp_t cdr = plisp_c_read(f);
-        do {
-            ch = fgetc(f);
-        } while (isspace(ch));
+        skip_cws(f, &ch);
 
         if (ch != ')') {
             if (ch == EOF) {
@@ -225,9 +238,7 @@ plisp_t plisp_read_hash(FILE *f) {
 
 plisp_t plisp_c_read(FILE *f) {
     int ch;
-    do {
-        ch = fgetc(f);
-    } while (isspace(ch));
+    skip_cws(f, &ch);
 
     if (ch == EOF) {
         return plisp_eof;
