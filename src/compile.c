@@ -233,7 +233,7 @@ static void plisp_compile_gen_closure(struct lambda_state *_state,
 
     // don't generate a malloc call if it isn't a closure
     if (num_elems == 0) {
-        jit_movi(JIT_R0, (jit_word_t) NULL);
+        jit_movi(JIT_R1, (jit_word_t) NULL);
         return;
     }
 
