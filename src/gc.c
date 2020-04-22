@@ -134,13 +134,7 @@ static void trace_object(plisp_t obj) {
     } else if (plisp_c_closurep(obj)) {
         struct plisp_closure_data *data = plisp_closure_data(obj);
         if (data != NULL) {
-
-            fprintf(stderr, "-> %lx\n", obj);
-            fprintf(stderr, ":> %p\n", data);
-            fprintf(stderr, "length: %lu\n", data->length);
             for (size_t i = 0; i < data->length; ++i) {
-                plisp_c_write(stderr, data->objs[i]);
-                fputc('\n', stderr);
                 trace_object(data->objs[i]);
             }
         }
@@ -209,7 +203,6 @@ size_t plisp_collect_garbage(void) {
 plisp_t plisp_alloc_obj(uintptr_t tags, bool freecdr) {
     void *ptr = allocate_or_null(conspool, freecdr);
     if (ptr == NULL) {
-        //fprintf(stderr, "collected %lu objects\n", plisp_collect_garbage());
         plisp_collect_garbage();
         ptr = allocate_or_null(conspool, freecdr);
         if (ptr == NULL) {

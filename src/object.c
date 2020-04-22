@@ -81,7 +81,6 @@ plisp_t plisp_make_closure(struct plisp_closure_data *data, plisp_fn_t fun) {
     plisp_t closure = plisp_alloc_obj(LT_CLOS, true);
     struct plisp_closure *clptr = (void *) (closure & ~LOTAGS);
 
-    fprintf(stderr, "%p, %p\n", data, fun);
     clptr->data = data;
     clptr->fun = fun;
 
