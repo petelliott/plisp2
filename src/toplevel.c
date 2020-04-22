@@ -3,6 +3,7 @@
 #include <plisp/read.h>
 #include <plisp/write.h>
 #include <plisp/compile.h>
+#include <plisp/saftey.h>
 #include <Judy.h>
 #include <assert.h>
 
@@ -10,10 +11,12 @@ static Pvoid_t toplevel_scope = NULL;
 
 static plisp_t define_sym;
 static plisp_t lambda_sym;
+static plisp_t set_sym;
 
 void plisp_init_toplevel(void) {
     define_sym = plisp_intern(plisp_make_symbol("define"));
     lambda_sym = plisp_intern(plisp_make_symbol("lambda"));
+    set_sym = plisp_intern(plisp_make_symbol("set!"));
 }
 
 void plisp_toplevel_define(plisp_t sym, plisp_t value) {
@@ -21,6 +24,8 @@ void plisp_toplevel_define(plisp_t sym, plisp_t value) {
 }
 
 plisp_t *plisp_toplevel_ref(plisp_t sym) {
+    plisp_assert(plisp_c_symbolp(sym));
+
     plisp_t *pval;
     JLG(pval, toplevel_scope, sym);
     if (pval == NULL) {
@@ -68,17 +73,27 @@ static plisp_t do_define(plisp_t form) {
     return plisp_unspec;
 }
 
+static plisp_t do_set(plisp_t form) {
+    plisp_t sym = plisp_car(plisp_cdr(form));
+    plisp_t value = plisp_car(plisp_cdr(plisp_cdr(form)));
+
+    plisp_assert(*plisp_toplevel_ref(sym) != plisp_unbound);
+    *plisp_toplevel_ref(sym) = value;
+    return plisp_unspec;
+}
+
 plisp_t plisp_toplevel_eval(plisp_t form) {
     if (plisp_c_consp(form)) {
         if (plisp_car(form) == define_sym) {
             return do_define(form);
+        } else if (plisp_car(form) == set_sym) {
+            return do_set(form);
         } else {
             // compile an execute an argumentless lambda function
             plisp_t lamb = plisp_cons(
                                lambda_sym,
                                plisp_cons(plisp_nil,
                                           plisp_cons(form, plisp_nil)));
-
             plisp_t clos = plisp_make_closure(
                                NULL, plisp_compile_lambda(lamb));
 
