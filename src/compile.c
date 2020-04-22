@@ -7,6 +7,7 @@
 #include <plisp/toplevel.h>
 #include <plisp/builtin.h>
 #include <plisp/object.h>
+#include <plisp/saftey.h>
 #include <assert.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -15,6 +16,7 @@ static plisp_t lambda_sym;
 static plisp_t define_sym;
 static plisp_t if_sym;
 static plisp_t quote_sym;
+static plisp_t set_sym;
 
 void plisp_init_compiler(char *argv0) {
     init_jit(argv0);
@@ -22,6 +24,7 @@ void plisp_init_compiler(char *argv0) {
     define_sym = plisp_intern(plisp_make_symbol("define"));
     if_sym = plisp_intern(plisp_make_symbol("if"));
     quote_sym = plisp_intern(plisp_make_symbol("quote"));
+    set_sym = plisp_intern(plisp_make_symbol("set!"));
 }
 
 void plisp_end_compiler(void) {
@@ -256,6 +259,34 @@ static void plisp_compile_gen_closure(struct lambda_state *_state,
     }
 }
 
+static void plisp_compile_set(struct lambda_state *_state, plisp_t expr) {
+    plisp_t sym = plisp_car(plisp_cdr(expr));
+    plisp_assert(plisp_c_symbolp(sym));
+
+    plisp_t value = plisp_car(plisp_cdr(plisp_cdr(expr)));
+
+    // TODO: set local variables
+
+    plisp_t *tl_slot = plisp_toplevel_ref(sym);
+
+    #ifndef PLISP_UNSAFE
+    // don't generate a runtime check if the variable is bound at
+    // compile time
+    if (*tl_slot == plisp_unbound) {
+        // assert that the variable we reference is bound
+        jit_ldi(JIT_R0, tl_slot);
+        jit_prepare();
+        jit_pushargr(JIT_R0);
+        jit_pushargi(sym);
+        jit_finishi(assert_bound);
+    }
+    #endif
+
+    plisp_compile_expr(_state, value);
+    jit_sti(tl_slot, JIT_R0);
+    jit_movi(JIT_R0, plisp_unspec);
+}
+
 static void plisp_compile_expr(struct lambda_state *_state, plisp_t expr) {
     if (plisp_c_consp(expr)) {
         if (plisp_car(expr) == lambda_sym) {
@@ -281,6 +312,8 @@ static void plisp_compile_expr(struct lambda_state *_state, plisp_t expr) {
                 plisp_gc_permanent(obj);
             }
             jit_movi(JIT_R0, obj);
+        } else if (plisp_car(expr) == set_sym) {
+            plisp_compile_set(_state, expr);
         } else {
             plisp_compile_call(_state, expr);
         }
@@ -300,6 +333,8 @@ static void plisp_compile_local_define(struct lambda_state *_state,
     if (plisp_c_consp(plisp_car(plisp_cdr(form)))) {
         // function define
         sym = plisp_car(plisp_car(plisp_cdr(form)));
+        plisp_assert(plisp_c_symbolp(sym));
+
         valexpr = plisp_cons(
                       lambda_sym,
                       plisp_cons(
@@ -308,6 +343,7 @@ static void plisp_compile_local_define(struct lambda_state *_state,
     } else {
         // value define
         sym = plisp_car(plisp_cdr(form));
+        plisp_assert(plisp_c_symbolp(sym));
         valexpr = plisp_car(plisp_cdr(plisp_cdr(form)));
     }
 
