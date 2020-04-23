@@ -92,7 +92,7 @@ enum plisp_vec_type {
 
 struct plisp_vector {
     uint8_t  type;
-    uint8_t  elem_width; // 2**elem_width = width in bytes
+    uint8_t  elem_width; // elem_width = width in bytes
     uint16_t flags;
     uint32_t len;
     void     *vec;

@@ -5,6 +5,7 @@
 #include <plisp/toplevel.h>
 #include <plisp/saftey.h>
 #include <plisp/gc.h>
+#include <plisp/posix.h>
 #include <stdarg.h>
 
 void plisp_init_builtin(void) {
@@ -48,6 +49,8 @@ void plisp_init_builtin(void) {
     plisp_define_builtin("eval", plisp_builtin_eval);
 
     #pragma GCC diagnostic pop
+
+    plisp_init_posix();
 }
 
 void plisp_define_builtin(const char *name, plisp_fn_t fun) {

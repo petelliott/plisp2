@@ -187,7 +187,8 @@ bool plisp_c_stringp(plisp_t val) {
 
 plisp_t plisp_make_string(const char *string) {
     size_t len = strlen(string);
-    plisp_t str = plisp_make_vector(VEC_CHAR, 0, VFLAG_IMMUTABLE, len+1,
+    plisp_t str = plisp_make_vector(VEC_CHAR, sizeof(char),
+                                    VFLAG_IMMUTABLE, len+1,
                                     plisp_nil, false);
     str = (str & ~LOTAGS) | LT_VECTOR;
     struct plisp_vector *strptr = (void *) (str & ~LOTAGS);
