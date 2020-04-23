@@ -257,9 +257,8 @@ plisp_t plisp_builtin_make_vector(plisp_t *clos, size_t nargs,
                              plisp_fixnum_value(len), init, true);
 }
 
-plisp_t plisp_builtin_list_to_vector(plisp_t *clos, size_t nargs, plisp_t lst) {
-    plisp_assert(nargs == 1);
-
+plisp_t plisp_list_to_vector(plisp_t lst) {
+    plisp_assert(plisp_c_consp(lst) || plisp_c_nullp(lst));
     size_t len = plisp_c_length(lst);
     plisp_t vec = plisp_make_vector(VEC_OBJ, sizeof(plisp_t), 0,
                                     len, plisp_unspec, false);
@@ -271,4 +270,8 @@ plisp_t plisp_builtin_list_to_vector(plisp_t *clos, size_t nargs, plisp_t lst) {
 
 
     return vec;
+}
+plisp_t plisp_builtin_list_to_vector(plisp_t *clos, size_t nargs, plisp_t lst) {
+    plisp_assert(nargs == 1);
+    return plisp_list_to_vector(lst);
 }

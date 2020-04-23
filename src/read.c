@@ -1,4 +1,5 @@
 #include <plisp/read.h>
+#include <plisp/builtin.h>
 #include <ctype.h>
 #include <stdlib.h>
 #include <Judy.h>
@@ -214,16 +215,13 @@ plisp_t plisp_read_call(FILE *f, const char *sym) {
 }
 
 plisp_t plisp_read_hash(FILE *f) {
-    /*
     char ch = fgetc(f);
     if (ch == '(') {
-        return plisp_cons(
-            make_interned_symbol("vector"),
+        return plisp_list_to_vector(
             plisp_read_list(f));
     } else {
         ungetc(ch, f);
     }
-    */
 
     plisp_t sym = plisp_read_symbol(f);
 

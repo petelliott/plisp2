@@ -37,6 +37,7 @@ plisp_t plisp_builtin_object_addr(plisp_t *clos, size_t nargs, plisp_t obj);
 plisp_t plisp_builtin_vector(plisp_t *clos, size_t nargs, ...);
 plisp_t plisp_builtin_make_vector(plisp_t *clos, size_t nargs,
                                   plisp_t len, plisp_t init);
+plisp_t plisp_list_to_vector(plisp_t lst);
 plisp_t plisp_builtin_list_to_vector(plisp_t *clos, size_t nargs, plisp_t lst);
 
 #endif
