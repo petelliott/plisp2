@@ -8,7 +8,10 @@
 #include <plisp/posix.h>
 #include <stdarg.h>
 
+static plisp_t filesym;
+
 void plisp_init_builtin(void) {
+    filesym = plisp_intern(plisp_make_symbol("%file"));
     // gcc passes variadic args just like regular args, so this is
     // okayish. the C standard forbids casting form f(...) to f().
     #pragma GCC diagnostic push
@@ -291,13 +294,19 @@ plisp_t plisp_builtin_read(plisp_t *clos, size_t nargs) {
 }
 
 void plisp_c_load(const char *fname) {
+    plisp_t oldfile = *plisp_toplevel_ref(filesym);
+    plisp_toplevel_define(filesym, plisp_make_string(fname));
+
     FILE *file = fopen(fname, "r");
 
     plisp_t obj;
     while (!plisp_c_eofp(obj = plisp_c_read(file))) {
         plisp_toplevel_eval(obj);
     }
+
     fclose(file);
+
+    plisp_toplevel_define(filesym, oldfile);
 }
 
 plisp_t plisp_builtin_load(plisp_t *clos, size_t nargs, plisp_t fname) {

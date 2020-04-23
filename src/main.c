@@ -19,6 +19,9 @@ int main(int argc, char *argv[]) {
     if (argc > 1) {
         plisp_c_load(argv[1]);
     } else {
+
+        plisp_t filesym = plisp_intern(plisp_make_symbol("%file"));
+        plisp_toplevel_define(filesym, plisp_make_bool(false));
         while (1) {
             printf("> ");
             plisp_t obj = plisp_c_read(stdin);
