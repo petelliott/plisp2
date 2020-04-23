@@ -106,7 +106,8 @@ static void plisp_compile_expr(struct lambda_state *_state, plisp_t expr);
 static plisp_fn_t plisp_compile_lambda_context(
     plisp_t lambda,
     struct lambda_state *parent_state,
-    Pvoid_t *closure_vars);
+    Pvoid_t *closure_vars,
+    jit_state_t **fn_jit_state);
 
 static void plisp_compile_call(struct lambda_state *_state, plisp_t expr) {
     int args[128];
@@ -300,7 +301,7 @@ static void plisp_compile_expr(struct lambda_state *_state, plisp_t expr) {
     if (plisp_c_consp(expr)) {
         if (plisp_car(expr) == lambda_sym) {
             Pvoid_t closure;
-            plisp_fn_t fun = plisp_compile_lambda_context(expr, _state, &closure);
+            plisp_fn_t fun = plisp_compile_lambda_context(expr, _state, &closure, NULL);
 
             // produces closure data in JIT_R1
             plisp_compile_gen_closure(_state, closure);
@@ -388,7 +389,8 @@ static plisp_t va_to_list(size_t nargs, va_list args) {
 static plisp_fn_t plisp_compile_lambda_context(
     plisp_t lambda,
     struct lambda_state *parent_state,
-    Pvoid_t *closure_vars) {
+    Pvoid_t *closure_vars,
+    jit_state_t **fn_jit_state) {
 
     // maps argument names to nodes
     struct lambda_state state = {
@@ -493,10 +495,13 @@ static plisp_fn_t plisp_compile_lambda_context(
 
     //printf("lambda:\n");
     //jit_disassemble();
+    if (fn_jit_state != NULL) {
+        *fn_jit_state = _state->jit;
+    }
 
     return fun;
 }
 
-plisp_fn_t plisp_compile_lambda(plisp_t lambda) {
-    return plisp_compile_lambda_context(lambda, NULL, NULL);
+plisp_fn_t plisp_compile_lambda(plisp_t lambda, jit_state_t **fn_jit_state) {
+    return plisp_compile_lambda_context(lambda, NULL, NULL, fn_jit_state);
 }

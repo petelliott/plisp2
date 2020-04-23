@@ -94,10 +94,11 @@ plisp_t plisp_toplevel_eval(plisp_t form) {
                                lambda_sym,
                                plisp_cons(plisp_nil,
                                           plisp_cons(form, plisp_nil)));
-            plisp_t clos = plisp_make_closure(
-                               NULL, plisp_compile_lambda(lamb));
-
-            return plisp_closure_fun(clos)(NULL, 0);
+            jit_state_t *_jit;
+            plisp_fn_t fn = plisp_compile_lambda(lamb, &_jit);
+            plisp_t result = fn(NULL, 0);
+            jit_destroy_state();
+            return result;
         }
     } else if (plisp_c_symbolp(form)) {
         plisp_t *ref = plisp_toplevel_ref(form);
