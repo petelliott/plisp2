@@ -44,4 +44,6 @@ plisp_t plisp_builtin_read(plisp_t *clos, size_t nargs);
 void plisp_c_load(const char *fname);
 plisp_t plisp_builtin_load(plisp_t *clos, size_t nargs, plisp_t fname);
 
+plisp_t plisp_builtin_eval(plisp_t *clos, size_t nargs, plisp_t expr);
+
 #endif

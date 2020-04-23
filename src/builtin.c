@@ -45,6 +45,8 @@ void plisp_init_builtin(void) {
     plisp_define_builtin("read", plisp_builtin_read);
     plisp_define_builtin("load", plisp_builtin_load);
 
+    plisp_define_builtin("eval", plisp_builtin_eval);
+
     #pragma GCC diagnostic pop
 }
 
@@ -299,4 +301,9 @@ plisp_t plisp_builtin_load(plisp_t *clos, size_t nargs, plisp_t fname) {
     plisp_assert(nargs == 1);
     plisp_c_load(plisp_string_value(fname));
     return plisp_unspec;
+}
+
+plisp_t plisp_builtin_eval(plisp_t *clos, size_t nargs, plisp_t expr) {
+    plisp_assert(nargs == 1);
+    return plisp_toplevel_eval(expr);
 }
