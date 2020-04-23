@@ -40,6 +40,7 @@ void plisp_init_builtin(void) {
 
     plisp_define_builtin("vector", plisp_builtin_vector);
     plisp_define_builtin("make-vector", plisp_builtin_make_vector);
+    plisp_define_builtin("list->vector", plisp_builtin_list_to_vector);
 
     #pragma GCC diagnostic pop
 }
@@ -254,4 +255,20 @@ plisp_t plisp_builtin_make_vector(plisp_t *clos, size_t nargs,
 
     return plisp_make_vector(VEC_OBJ, sizeof(plisp_t), 0,
                              plisp_fixnum_value(len), init, true);
+}
+
+plisp_t plisp_builtin_list_to_vector(plisp_t *clos, size_t nargs, plisp_t lst) {
+    plisp_assert(nargs == 1);
+
+    size_t len = plisp_c_length(lst);
+    plisp_t vec = plisp_make_vector(VEC_OBJ, sizeof(plisp_t), 0,
+                                    len, plisp_unspec, false);
+
+    for (size_t i = 0; i < len; ++i) {
+        plisp_vector_set(vec, i, plisp_car(lst));
+        lst = plisp_cdr(lst);
+    }
+
+
+    return vec;
 }
