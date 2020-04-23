@@ -38,6 +38,9 @@ void plisp_init_builtin(void) {
     plisp_define_builtin("collect-garbage", plisp_builtin_collect_garbage);
     plisp_define_builtin("object-addr", plisp_builtin_object_addr);
 
+    plisp_define_builtin("vector", plisp_builtin_vector);
+    plisp_define_builtin("make-vector", plisp_builtin_make_vector);
+
     #pragma GCC diagnostic pop
 }
 
@@ -224,4 +227,31 @@ plisp_t plisp_builtin_object_addr(plisp_t *clos, size_t nargs, plisp_t obj) {
     plisp_assert(nargs == 1);
     fprintf(stderr, "%lx\n", obj);
     return plisp_unspec;
+}
+
+plisp_t plisp_builtin_vector(plisp_t *clos, size_t nargs, ...) {
+    plisp_t vec = plisp_make_vector(VEC_OBJ, sizeof(plisp_t), 0,
+                                    nargs, plisp_unspec, false);
+
+    va_list vl;
+    va_start(vl, nargs);
+
+    for (size_t i = 0; i < nargs; ++i) {
+        plisp_vector_set(vec, i, va_arg(vl, plisp_t));
+    }
+
+    return vec;
+}
+
+plisp_t plisp_builtin_make_vector(plisp_t *clos, size_t nargs,
+                                  plisp_t len, plisp_t init) {
+    plisp_assert(nargs == 1 || nargs == 2);
+    plisp_assert(plisp_c_fixnump(len));
+
+    if (nargs == 1) {
+        init = plisp_unspec;
+    }
+
+    return plisp_make_vector(VEC_OBJ, sizeof(plisp_t), 0,
+                             plisp_fixnum_value(len), init, true);
 }

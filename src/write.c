@@ -44,6 +44,17 @@ static void plisp_c_write_string(FILE *f, plisp_t obj) {
     fputc('"', f);
 }
 
+static void plisp_c_write_vector(FILE *f, plisp_t obj) {
+    fprintf(f, "#(");
+    for (size_t i = 0; i < plisp_vector_c_length(obj); ++i) {
+        if (i != 0) {
+            fprintf(f, " ");
+        }
+        plisp_c_write(f, plisp_vector_ref(obj, i));
+    }
+    fprintf(f, ")");
+}
+
 void plisp_c_write(FILE *f, plisp_t obj) {
     if (plisp_c_consp(obj)) {
         fprintf(f, "(");
@@ -61,6 +72,8 @@ void plisp_c_write(FILE *f, plisp_t obj) {
         plisp_c_write_string(f, obj);
     } else if (plisp_c_symbolp(obj)) {
         fprintf(f, "%s", plisp_string_value(plisp_symbol_name(obj)));
+    } else if (plisp_c_vectorp(obj)) {
+        plisp_c_write_vector(f, obj);
     } else if (plisp_c_nullp(obj)) {
         fprintf(f, "()");
 

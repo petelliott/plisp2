@@ -131,7 +131,9 @@ plisp_t plisp_make_vector(enum plisp_vec_type type, uint8_t
     vecptr->vec        = malloc(len * elem_width);
 
     if (use_ie) {
-        //TODO: cases for types
+        for (size_t i = 0; i < len; ++i) {
+            plisp_vector_set(vector, i, initial_element);
+        }
     }
 
     return vector;
@@ -159,6 +161,7 @@ plisp_t plisp_vector_set(plisp_t vec, size_t idx, plisp_t value) {
     struct plisp_vector *vecptr = (void *) (vec & ~LOTAGS);
 
     plisp_assert(idx < vecptr->len);
+    plisp_assert(!(vecptr->flags & VFLAG_IMMUTABLE));
 
     if (vecptr->type == VEC_OBJ) {
         plisp_assert(vecptr->elem_width == sizeof(plisp_t));
