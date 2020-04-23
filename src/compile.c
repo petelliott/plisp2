@@ -265,7 +265,16 @@ static void plisp_compile_set(struct lambda_state *_state, plisp_t expr) {
 
     plisp_t value = plisp_car(plisp_cdr(plisp_cdr(expr)));
 
-    // TODO: set local variables
+    int *pval;
+    JLG(pval, _state->arg_table, sym);
+    if (pval != NULL) {
+        plisp_compile_expr(_state, value);
+        jit_stxi(*pval, JIT_FP, JIT_R0);
+        jit_movi(JIT_R0, plisp_unspec);
+        return;
+    }
+
+    // TODO: set enclosed variables
 
     plisp_t *tl_slot = plisp_toplevel_ref(sym);
 
