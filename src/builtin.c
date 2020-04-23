@@ -42,6 +42,9 @@ void plisp_init_builtin(void) {
     plisp_define_builtin("make-vector", plisp_builtin_make_vector);
     plisp_define_builtin("list->vector", plisp_builtin_list_to_vector);
 
+    plisp_define_builtin("read", plisp_builtin_read);
+    plisp_define_builtin("load", plisp_builtin_load);
+
     #pragma GCC diagnostic pop
 }
 
@@ -271,7 +274,29 @@ plisp_t plisp_list_to_vector(plisp_t lst) {
 
     return vec;
 }
+
 plisp_t plisp_builtin_list_to_vector(plisp_t *clos, size_t nargs, plisp_t lst) {
     plisp_assert(nargs == 1);
     return plisp_list_to_vector(lst);
+}
+
+plisp_t plisp_builtin_read(plisp_t *clos, size_t nargs) {
+    plisp_assert(nargs == 0);
+    return plisp_c_read(stdin);
+}
+
+void plisp_c_load(const char *fname) {
+    FILE *file = fopen(fname, "r");
+
+    plisp_t obj;
+    while (!plisp_c_eofp(obj = plisp_c_read(file))) {
+        plisp_toplevel_eval(obj);
+    }
+    fclose(file);
+}
+
+plisp_t plisp_builtin_load(plisp_t *clos, size_t nargs, plisp_t fname) {
+    plisp_assert(nargs == 1);
+    plisp_c_load(plisp_string_value(fname));
+    return plisp_unspec;
 }
