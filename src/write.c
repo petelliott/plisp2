@@ -83,6 +83,8 @@ void plisp_c_write(FILE *f, plisp_t obj) {
         fprintf(f, "#<unspecified>");
     } else if (obj == plisp_unbound) {
         fprintf(f, "#<unbound>");
+    } else if (plisp_c_charp(obj)) {
+        fprintf(f, "#\\%c", plisp_char_value(obj));
     } else {
         fprintf(f, "#?");
     }

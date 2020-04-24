@@ -219,9 +219,12 @@ plisp_t plisp_read_hash(FILE *f) {
     if (ch == '(') {
         return plisp_list_to_vector(
             plisp_read_list(f));
+    } else if (ch == '\\') {
+        return plisp_make_char(fgetc(f));
     } else {
         ungetc(ch, f);
     }
+
 
     plisp_t sym = plisp_read_symbol(f);
 
