@@ -45,6 +45,8 @@ void plisp_init_builtin(void) {
     plisp_define_builtin("vector", plisp_builtin_vector);
     plisp_define_builtin("make-vector", plisp_builtin_make_vector);
     plisp_define_builtin("list->vector", plisp_builtin_list_to_vector);
+    plisp_define_builtin("vector-ref", plisp_builtin_vector_ref);
+    plisp_define_builtin("vector-set!", plisp_builtin_vector_set);
 
     plisp_define_builtin("read", plisp_builtin_read);
     plisp_define_builtin("load", plisp_builtin_load);
@@ -286,6 +288,19 @@ plisp_t plisp_list_to_vector(plisp_t lst) {
 plisp_t plisp_builtin_list_to_vector(plisp_t *clos, size_t nargs, plisp_t lst) {
     plisp_assert(nargs == 1);
     return plisp_list_to_vector(lst);
+}
+
+plisp_t plisp_builtin_vector_ref(plisp_t *clos, size_t nargs,
+                                 plisp_t vector, plisp_t idx) {
+    plisp_assert(nargs == 2);
+    return plisp_vector_ref(vector, plisp_fixnum_value(idx));
+}
+
+plisp_t plisp_builtin_vector_set(plisp_t *clos, size_t nargs,
+                                 plisp_t vector, plisp_t idx, plisp_t val) {
+    plisp_assert(nargs == 3);
+    plisp_vector_set(vector, plisp_fixnum_value(idx), val);
+    return plisp_unspec;
 }
 
 plisp_t plisp_builtin_read(plisp_t *clos, size_t nargs) {

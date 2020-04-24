@@ -156,7 +156,7 @@ plisp_t plisp_vector_ref(plisp_t vec, size_t idx) {
     return plisp_nil;
 }
 
-plisp_t plisp_vector_set(plisp_t vec, size_t idx, plisp_t value) {
+void plisp_vector_set(plisp_t vec, size_t idx, plisp_t value) {
     plisp_assert(plisp_c_vectorp(vec));
     struct plisp_vector *vecptr = (void *) (vec & ~LOTAGS);
 
@@ -170,8 +170,6 @@ plisp_t plisp_vector_set(plisp_t vec, size_t idx, plisp_t value) {
         //TODO
         assert(false);
     }
-
-    return plisp_nil;
 }
 
 size_t plisp_vector_c_length(plisp_t vec) {

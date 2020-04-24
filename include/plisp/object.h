@@ -107,7 +107,7 @@ plisp_t plisp_make_vector(enum plisp_vec_type type, uint8_t
                           elem_width, uint16_t flags, uint32_t len,
                           plisp_t initial_element, bool use_ie);
 plisp_t plisp_vector_ref(plisp_t vec, size_t idx);
-plisp_t plisp_vector_set(plisp_t vec, size_t idx, plisp_t value);
+void plisp_vector_set(plisp_t vec, size_t idx, plisp_t value);
 size_t plisp_vector_c_length(plisp_t vec);
 
 bool plisp_c_stringp(plisp_t val);

@@ -39,6 +39,12 @@ plisp_t plisp_builtin_make_vector(plisp_t *clos, size_t nargs,
                                   plisp_t len, plisp_t init);
 plisp_t plisp_list_to_vector(plisp_t lst);
 plisp_t plisp_builtin_list_to_vector(plisp_t *clos, size_t nargs, plisp_t lst);
+plisp_t plisp_builtin_make_vector(plisp_t *clos, size_t nargs,
+                                  plisp_t len, plisp_t init);
+plisp_t plisp_builtin_vector_ref(plisp_t *clos, size_t nargs,
+                                 plisp_t vector, plisp_t idx);
+plisp_t plisp_builtin_vector_set(plisp_t *clos, size_t nargs,
+                                 plisp_t vector, plisp_t idx, plisp_t val);
 
 plisp_t plisp_builtin_read(plisp_t *clos, size_t nargs);
 void plisp_c_load(const char *fname);
