@@ -7,6 +7,7 @@
 #include <plisp/gc.h>
 #include <plisp/posix.h>
 #include <stdarg.h>
+#include <string.h>
 
 static plisp_t filesym;
 
@@ -47,6 +48,9 @@ void plisp_init_builtin(void) {
     plisp_define_builtin("list->vector", plisp_builtin_list_to_vector);
     plisp_define_builtin("vector-ref", plisp_builtin_vector_ref);
     plisp_define_builtin("vector-set!", plisp_builtin_vector_set);
+    plisp_define_builtin("vector-append", plisp_builtin_vector_append);
+    plisp_define_builtin("string-append", plisp_builtin_string_append);
+
 
     plisp_define_builtin("read", plisp_builtin_read);
     plisp_define_builtin("load", plisp_builtin_load);
@@ -301,6 +305,80 @@ plisp_t plisp_builtin_vector_set(plisp_t *clos, size_t nargs,
     plisp_assert(nargs == 3);
     plisp_vector_set(vector, plisp_fixnum_value(idx), val);
     return plisp_unspec;
+}
+
+plisp_t plisp_builtin_vector_append(plisp_t *clos, size_t nargs, ...) {
+    if (nargs == 0) {
+        return plisp_make_vector(VEC_OBJ, sizeof(plisp_t),
+                                 0, 0, plisp_unspec, false);
+    }
+
+    va_list vl;
+    va_start(vl, nargs);
+
+    struct plisp_vector *vecs[128]; //TODO allow unbounded vectors
+
+    size_t newlen = 0;
+    for (size_t i = 0; i < nargs; ++i) {
+        plisp_t vec = va_arg(vl, plisp_t);
+        plisp_assert(plisp_c_vectorp(vec));
+        vecs[i] = (void *) (vec & ~LOTAGS);
+        if (i != 0) {
+            plisp_assert(vecs[i]->type == vecs[i-1]->type);
+            plisp_assert(vecs[i]->elem_width == vecs[i-1]->elem_width);
+        }
+        newlen += vecs[i]->len;
+    }
+
+    plisp_t newvec = plisp_make_vector(vecs[0]->type, vecs[0]->elem_width,
+                                       0, newlen, plisp_unspec, false);
+    struct plisp_vector *newvecptr = (void *) (newvec & ~LOTAGS);
+
+
+    size_t off = 0;
+    for (size_t i = 0; i < nargs; ++i) {
+        size_t vlen = vecs[i]->len * vecs[i]->elem_width;
+        memcpy(newvecptr->vec + off, vecs[i]->vec, vlen);
+        off += vlen;
+    }
+
+    return newvec;
+}
+
+plisp_t plisp_builtin_string_append(plisp_t *clos, size_t nargs, ...) {
+    va_list vl;
+    va_start(vl, nargs);
+
+    struct plisp_vector *vecs[128]; //TODO allow unbounded vectors
+
+    size_t newlen = 1;
+    for (size_t i = 0; i < nargs; ++i) {
+        plisp_t vec = va_arg(vl, plisp_t);
+        plisp_assert(plisp_c_stringp(vec));
+        vecs[i] = (void *) (vec & ~LOTAGS);
+        if (i != 0) {
+            plisp_assert(vecs[i]->elem_width == vecs[i-1]->elem_width);
+        }
+        newlen += vecs[i]->len-1;
+    }
+
+    //TODO utf-16 and utf-32
+    plisp_t newvec = plisp_make_vector(VEC_CHAR, sizeof(char),
+                                       VFLAG_IMMUTABLE, newlen,
+                                       plisp_unspec, false);
+
+    struct plisp_vector *newvecptr = (void *) (newvec & ~LOTAGS);
+
+
+    size_t off = 0;
+    for (size_t i = 0; i < nargs; ++i) {
+        size_t vlen = vecs[i]->len * vecs[i]->elem_width - 1;
+        memcpy(newvecptr->vec + off, vecs[i]->vec, vlen);
+        off += vlen;
+    }
+    ((char *)newvecptr->vec)[off] = 0; // null terminate
+
+    return newvec;
 }
 
 plisp_t plisp_builtin_read(plisp_t *clos, size_t nargs) {
