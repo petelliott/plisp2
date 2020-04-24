@@ -247,3 +247,25 @@ plisp_t *plisp_get_consbox(plisp_t consbox) {
     struct plisp_cons *cellptr = (void *) (consbox & ~LOTAGS);
     return &(cellptr->car);
 }
+
+bool plisp_c_equal(plisp_t o1, plisp_t o2) {
+    if (o1 == o2) {
+        return true;
+    } else if (plisp_c_consp(o1) && plisp_c_consp(o2)) {
+        return plisp_c_equal(plisp_car(o1), plisp_car(o2))
+            && plisp_c_equal(plisp_cdr(o1), plisp_cdr(o2));
+    } else if (plisp_c_vectorp(o1) && plisp_c_vectorp(o2)) {
+        if (plisp_vector_c_length(o1) == plisp_vector_c_length(o2)) {
+            for (size_t i = 0; i < plisp_vector_c_length(o1); ++i) {
+                if (!plisp_c_equal(plisp_vector_ref(o1, i),
+                                  plisp_vector_ref(o2, i))) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+    }
+
+    return false;
+}

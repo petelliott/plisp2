@@ -31,6 +31,7 @@ void plisp_init_builtin(void) {
     plisp_define_builtin("not", plisp_builtin_not);
     plisp_define_builtin("null?", plisp_builtin_nullp);
     plisp_define_builtin("eq?", plisp_builtin_eq);
+    plisp_define_builtin("equal?", plisp_builtin_equal);
     plisp_define_builtin("<", plisp_builtin_lt);
 
     plisp_define_builtin("length", plisp_builtin_length);
@@ -179,6 +180,12 @@ plisp_t plisp_builtin_nullp(plisp_t *clos, size_t nargs, plisp_t obj) {
 plisp_t plisp_builtin_eq(plisp_t *clos, size_t nargs, plisp_t a, plisp_t b) {
     plisp_assert(nargs == 2);
     return plisp_make_bool(a == b);
+}
+
+plisp_t plisp_builtin_equal(plisp_t *clos, size_t nargs, plisp_t a, plisp_t b) {
+    plisp_assert(nargs == 2);
+    return plisp_make_bool(plisp_c_equal(a,b));
+
 }
 
 plisp_t plisp_builtin_lt(plisp_t *clos, size_t nargs, plisp_t a, plisp_t b) {

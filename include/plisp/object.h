@@ -128,4 +128,6 @@ void *plisp_custom_data(plisp_t val);
 plisp_t plisp_make_consbox(plisp_t val);
 plisp_t *plisp_get_consbox(plisp_t consbox);
 
+bool plisp_c_equal(plisp_t o1, plisp_t o2);
+
 #endif
