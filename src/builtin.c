@@ -126,7 +126,7 @@ plisp_t plisp_builtin_car(plisp_t *clos, size_t nargs, plisp_t cell) {
 
 plisp_t plisp_builtin_cdr(plisp_t *clos, size_t nargs, plisp_t cell) {
     plisp_assert(nargs == 1);
-    return plisp_car(cell);
+    return plisp_cdr(cell);
 }
 
 plisp_t plisp_c_reverse(plisp_t lst) {
@@ -398,6 +398,7 @@ void plisp_c_load(const char *fname) {
     plisp_toplevel_define(filesym, plisp_make_string(fname));
 
     FILE *file = fopen(fname, "r");
+    plisp_assert(file != NULL);
 
     plisp_t obj;
     while (!plisp_c_eofp(obj = plisp_c_read(file))) {
