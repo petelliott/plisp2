@@ -148,6 +148,11 @@ plisp_t plisp_vector_ref(plisp_t vec, size_t idx) {
     if (vecptr->type == VEC_OBJ) {
         plisp_assert(vecptr->elem_width == sizeof(plisp_t));
         return *(plisp_t *)(vecptr->vec + vecptr->elem_width * idx);
+    } else if (vecptr->type == VEC_CHAR) {
+        // TODO: support utf-16 and utf-32 strings
+        plisp_assert(vecptr->elem_width == sizeof(char));
+        return plisp_make_char(*(char *)(vecptr->vec + vecptr->elem_width * idx));
+
     } else {
         //TODO
         assert(false);
