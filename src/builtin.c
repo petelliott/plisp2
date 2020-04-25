@@ -3,6 +3,7 @@
 #include <plisp/read.h>
 #include <plisp/write.h>
 #include <plisp/toplevel.h>
+#include <plisp/compile.h>
 #include <plisp/saftey.h>
 #include <plisp/gc.h>
 #include <plisp/posix.h>
@@ -43,6 +44,7 @@ void plisp_init_builtin(void) {
 
     plisp_define_builtin("collect-garbage", plisp_builtin_collect_garbage);
     plisp_define_builtin("object-addr", plisp_builtin_object_addr);
+    plisp_define_builtin("disassemble", plisp_builtin_disassemble);
 
     plisp_define_builtin("vector", plisp_builtin_vector);
     plisp_define_builtin("make-vector", plisp_builtin_make_vector);
@@ -57,6 +59,7 @@ void plisp_init_builtin(void) {
     plisp_define_builtin("load", plisp_builtin_load);
 
     plisp_define_builtin("eval", plisp_builtin_eval);
+
 
     #pragma GCC diagnostic pop
 
@@ -250,7 +253,11 @@ plisp_t plisp_builtin_collect_garbage(plisp_t *clos, size_t nargs) {
 
 plisp_t plisp_builtin_object_addr(plisp_t *clos, size_t nargs, plisp_t obj) {
     plisp_assert(nargs == 1);
-    fprintf(stderr, "%lx\n", obj);
+    if (plisp_heap_allocated(obj)) {
+        fprintf(stderr, "%p\n", (void *) (obj & ~LOTAGS));
+    } else {
+        fprintf(stderr, "not heap allocated\n");
+    }
     return plisp_unspec;
 }
 
@@ -419,4 +426,10 @@ plisp_t plisp_builtin_load(plisp_t *clos, size_t nargs, plisp_t fname) {
 plisp_t plisp_builtin_eval(plisp_t *clos, size_t nargs, plisp_t expr) {
     plisp_assert(nargs == 1);
     return plisp_toplevel_eval(expr);
+}
+
+plisp_t plisp_builtin_disassemble(plisp_t *clos, size_t nargs, plisp_t expr) {
+    plisp_assert(nargs == 1);
+    plisp_disassemble_fn(plisp_closure_fun(expr));
+    return plisp_unspec;
 }

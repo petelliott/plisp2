@@ -94,10 +94,9 @@ plisp_t plisp_toplevel_eval(plisp_t form) {
                                lambda_sym,
                                plisp_cons(plisp_nil,
                                           plisp_cons(form, plisp_nil)));
-            jit_state_t *_jit;
-            plisp_fn_t fn = plisp_compile_lambda(lamb, &_jit);
+            plisp_fn_t fn = plisp_compile_lambda(lamb);
             plisp_t result = fn(NULL, 0);
-            jit_destroy_state();
+            plisp_free_fn(fn);
             return result;
         }
     } else if (plisp_c_symbolp(form)) {

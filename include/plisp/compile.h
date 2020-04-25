@@ -6,6 +6,9 @@
 
 void plisp_init_compiler(char *argv0);
 void plisp_end_compiler(void);
-plisp_fn_t plisp_compile_lambda(plisp_t lambda, jit_state_t **fn_jit_state);
+plisp_fn_t plisp_compile_lambda(plisp_t lambda);
+
+void plisp_free_fn(plisp_fn_t fn);
+void plisp_disassemble_fn(plisp_fn_t fn);
 
 #endif
