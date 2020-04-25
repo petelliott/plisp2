@@ -53,6 +53,8 @@ void plisp_init_builtin(void) {
     plisp_define_builtin("vector-set!", plisp_builtin_vector_set);
     plisp_define_builtin("vector-append", plisp_builtin_vector_append);
     plisp_define_builtin("string-append", plisp_builtin_string_append);
+    plisp_define_builtin("vector-length", plisp_builtin_vector_length);
+    plisp_define_builtin("string-length", plisp_builtin_string_length);
 
 
     plisp_define_builtin("read", plisp_builtin_read);
@@ -393,6 +395,17 @@ plisp_t plisp_builtin_string_append(plisp_t *clos, size_t nargs, ...) {
     ((char *)newvecptr->vec)[off] = 0; // null terminate
 
     return newvec;
+}
+
+plisp_t plisp_builtin_vector_length(plisp_t *clos, size_t nargs, plisp_t vec) {
+    plisp_assert(nargs == 1);
+    return plisp_make_fixnum(plisp_vector_c_length(vec));
+}
+
+plisp_t plisp_builtin_string_length(plisp_t *clos, size_t nargs, plisp_t vec) {
+    plisp_assert(nargs == 1);
+    plisp_assert(plisp_c_stringp(vec));
+    return plisp_make_fixnum(plisp_vector_c_length(vec)-1);
 }
 
 plisp_t plisp_builtin_read(plisp_t *clos, size_t nargs) {

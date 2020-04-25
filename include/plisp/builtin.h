@@ -48,6 +48,8 @@ plisp_t plisp_builtin_vector_set(plisp_t *clos, size_t nargs,
                                  plisp_t vector, plisp_t idx, plisp_t val);
 plisp_t plisp_builtin_vector_append(plisp_t *clos, size_t nargs, ...);
 plisp_t plisp_builtin_string_append(plisp_t *clos, size_t nargs, ...);
+plisp_t plisp_builtin_vector_length(plisp_t *clos, size_t nargs, plisp_t vec);
+plisp_t plisp_builtin_string_length(plisp_t *clos, size_t nargs, plisp_t vec);
 
 plisp_t plisp_builtin_read(plisp_t *clos, size_t nargs);
 void plisp_c_load(const char *fname);
