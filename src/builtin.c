@@ -21,6 +21,7 @@ void plisp_init_builtin(void) {
 
     plisp_define_builtin("+", plisp_builtin_plus);
     plisp_define_builtin("-", plisp_builtin_minus);
+    plisp_define_builtin("*", plisp_builtin_times);
 
     plisp_define_builtin("cons", plisp_builtin_cons);
     plisp_define_builtin("car", plisp_builtin_car);
@@ -61,6 +62,7 @@ void plisp_init_builtin(void) {
     plisp_define_builtin("load", plisp_builtin_load);
 
     plisp_define_builtin("eval", plisp_builtin_eval);
+    plisp_define_builtin("hashq", plisp_builtin_hashq);
 
 
     #pragma GCC diagnostic pop
@@ -116,6 +118,25 @@ plisp_t plisp_builtin_minus(plisp_t *clos, size_t nargs, plisp_t a,
     va_end(vl);
 
     return sum;
+}
+
+plisp_t plisp_builtin_times(plisp_t *clos, size_t nargs, ...) {
+    plisp_assert(nargs >= 2);
+
+    va_list vl;
+    va_start(vl, nargs);
+
+    int64_t prod = 1;
+
+    for (size_t i = 0; i < nargs; ++i) {
+        plisp_t arg = va_arg(vl, plisp_t);
+        plisp_assert(plisp_c_fixnump(arg));
+        prod *= plisp_fixnum_value(arg);
+    }
+
+    va_end(vl);
+
+    return plisp_make_fixnum(prod);
 }
 
 plisp_t plisp_builtin_cons(plisp_t *clos, size_t nargs, plisp_t car,
@@ -445,4 +466,11 @@ plisp_t plisp_builtin_disassemble(plisp_t *clos, size_t nargs, plisp_t expr) {
     plisp_assert(nargs == 1);
     plisp_disassemble_fn(plisp_closure_fun(expr));
     return plisp_unspec;
+}
+
+plisp_t plisp_builtin_hashq(plisp_t *clos, size_t nargs, plisp_t obj,
+                            plisp_t bits) {
+    plisp_assert(nargs == 2);
+    return plisp_make_fixnum((((uintptr_t) obj) * 11400714819323198485llu)
+                             >> (64 - plisp_fixnum_value(bits)));
 }

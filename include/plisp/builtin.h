@@ -9,6 +9,7 @@ void plisp_define_builtin(const char *name, plisp_fn_t fun);
 
 plisp_t plisp_builtin_plus(plisp_t *clos, size_t nargs, plisp_t a, plisp_t b, ...);
 plisp_t plisp_builtin_minus(plisp_t *clos, size_t nargs, plisp_t a, plisp_t b, ...);
+plisp_t plisp_builtin_times(plisp_t *clos, size_t nargs, ...);
 
 plisp_t plisp_builtin_cons(plisp_t *clos, size_t nargs, plisp_t car, plisp_t cdr);
 plisp_t plisp_builtin_car(plisp_t *clos, size_t nargs, plisp_t cell);
@@ -57,5 +58,7 @@ plisp_t plisp_builtin_load(plisp_t *clos, size_t nargs, plisp_t fname);
 
 plisp_t plisp_builtin_eval(plisp_t *clos, size_t nargs, plisp_t expr);
 plisp_t plisp_builtin_disassemble(plisp_t *clos, size_t nargs, plisp_t expr);
+
+plisp_t plisp_builtin_hashq(plisp_t *clos, size_t nargs, plisp_t obj, plisp_t bits);
 
 #endif
