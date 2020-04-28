@@ -26,3 +26,5 @@
   (if (not (require-find required rpath))
       (require-load rpath)
       #f))
+
+(require "stdlib.scm")

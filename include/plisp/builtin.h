@@ -23,6 +23,7 @@ plisp_t plisp_builtin_not(plisp_t *clos, size_t nargs, plisp_t obj);
 plisp_t plisp_builtin_nullp(plisp_t *clos, size_t nargs, plisp_t obj);
 plisp_t plisp_builtin_eq(plisp_t *clos, size_t nargs, plisp_t a, plisp_t b);
 plisp_t plisp_builtin_equal(plisp_t *clos, size_t nargs, plisp_t a, plisp_t b);
+plisp_t plisp_builtin_pair(plisp_t *clos, size_t nargs, plisp_t obj);
 plisp_t plisp_builtin_lt(plisp_t *clos, size_t nargs, plisp_t a, plisp_t b);
 
 size_t plisp_c_length(plisp_t lst);
