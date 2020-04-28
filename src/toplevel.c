@@ -12,11 +12,13 @@ static Pvoid_t toplevel_scope = NULL;
 static plisp_t define_sym;
 static plisp_t lambda_sym;
 static plisp_t set_sym;
+static plisp_t macroexpand_sym;
 
 void plisp_init_toplevel(void) {
     define_sym = plisp_intern(plisp_make_symbol("define"));
     lambda_sym = plisp_intern(plisp_make_symbol("lambda"));
     set_sym = plisp_intern(plisp_make_symbol("set!"));
+    macroexpand_sym = plisp_intern(plisp_make_symbol("macroexpand"));
 }
 
 void plisp_toplevel_define(plisp_t sym, plisp_t value) {
@@ -83,6 +85,14 @@ static plisp_t do_set(plisp_t form) {
 }
 
 plisp_t plisp_toplevel_eval(plisp_t form) {
+    plisp_t mexpand = *plisp_toplevel_ref(macroexpand_sym);
+    if (mexpand != plisp_unbound && mexpand != plisp_unspec) {
+        form = plisp_closure_fun(mexpand)(
+                   plisp_closure_data(mexpand),
+                   1, form);
+    }
+
+
     if (plisp_c_consp(form)) {
         if (plisp_car(form) == define_sym) {
             return do_define(form);

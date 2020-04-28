@@ -35,8 +35,10 @@ void plisp_init_builtin(void) {
     plisp_define_builtin("null?", plisp_builtin_nullp);
     plisp_define_builtin("eq?", plisp_builtin_eq);
     plisp_define_builtin("equal?", plisp_builtin_equal);
-    plisp_define_builtin("pair?", plisp_builtin_pair);
     plisp_define_builtin("<", plisp_builtin_lt);
+
+    plisp_define_builtin("pair?", plisp_builtin_pair);
+    plisp_define_builtin("list?", plisp_builtin_listp);
 
     plisp_define_builtin("length", plisp_builtin_length);
     plisp_define_builtin("append", plisp_builtin_append);
@@ -217,14 +219,25 @@ plisp_t plisp_builtin_equal(plisp_t *clos, size_t nargs, plisp_t a, plisp_t b) {
     return plisp_make_bool(plisp_c_equal(a,b));
 }
 
+
+plisp_t plisp_builtin_lt(plisp_t *clos, size_t nargs, plisp_t a, plisp_t b) {
+    plisp_assert(nargs == 2);
+    return plisp_make_bool(a < b);
+}
+
 plisp_t plisp_builtin_pair(plisp_t *clos, size_t nargs, plisp_t obj) {
     plisp_assert(nargs == 1);
     return plisp_make_bool(plisp_c_consp(obj));
 }
 
-plisp_t plisp_builtin_lt(plisp_t *clos, size_t nargs, plisp_t a, plisp_t b) {
-    plisp_assert(nargs == 2);
-    return plisp_make_bool(a < b);
+bool plisp_c_listp(plisp_t obj) {
+    return obj == plisp_nil
+        || (plisp_c_consp(obj) && plisp_c_listp(plisp_cdr(obj)));
+}
+
+plisp_t plisp_builtin_listp(plisp_t *clos, size_t nargs, plisp_t obj) {
+    plisp_assert(nargs == 1);
+    return plisp_make_bool(plisp_c_listp(obj));
 }
 
 size_t plisp_c_length(plisp_t lst) {

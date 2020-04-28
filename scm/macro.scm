@@ -17,9 +17,17 @@
 
 (define (macroexpand expr)
   ;; no cond yet :-(
-  (if (pair? expr)
-      (if (macro-find (car expr))
-          (macroexpand (apply (macro-find (car expr))
+  (if (list? expr)
+      (if (eq? (car expr) 'quote) ; TODO quasiquote
+          expr
+          (if (macro-find (car expr))
+              (macroexpand (apply (macro-find (car expr))
                                (cdr expr)))
-          (map macroexpand expr))
+              (map macroexpand expr)))
       expr))
+
+(macro-set! 'define-macro
+            (lambda (args . body)
+              `(macro-set! ',(car args)
+                           (lambda ,(cdr args)
+                             ,@body))))
