@@ -39,6 +39,7 @@ void plisp_init_builtin(void) {
     plisp_define_builtin("<", plisp_builtin_lt);
 
     plisp_define_builtin("length", plisp_builtin_length);
+    plisp_define_builtin("append", plisp_builtin_append);
 
     plisp_define_builtin("display", plisp_builtin_display);
     plisp_define_builtin("write", plisp_builtin_write);
@@ -239,6 +240,18 @@ size_t plisp_c_length(plisp_t lst) {
 plisp_t plisp_builtin_length(plisp_t *clos, size_t nargs, plisp_t lst) {
     plisp_assert(nargs == 1);
     return plisp_make_fixnum(plisp_c_length(lst));
+}
+
+plisp_t plisp_append(plisp_t a, plisp_t b) {
+    for (plisp_t i = plisp_c_reverse(a); i != plisp_nil; i = plisp_cdr(i)) {
+        b = plisp_cons(plisp_car(i), b);
+    }
+    return b;
+}
+
+plisp_t plisp_builtin_append(plisp_t *clos, size_t nargs, plisp_t a, plisp_t b) {
+    plisp_assert(nargs == 2);
+    return plisp_append(a, b);
 }
 
 plisp_t plisp_builtin_display(plisp_t *clos, size_t nargs, plisp_t obj) {

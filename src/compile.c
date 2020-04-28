@@ -311,6 +311,17 @@ static void plisp_compile_quasiquote(struct lambda_state *_state, plisp_t expr) 
     if (plisp_c_consp(expr)) {
         if (plisp_car(expr) == unquote_sym) {
             plisp_compile_expr(_state, plisp_car(plisp_cdr(expr)));
+        } else if (plisp_c_consp(plisp_car(expr))
+                   && plisp_car(plisp_car(expr)) == unquote_splicing_sym) {
+            plisp_compile_expr(_state, plisp_car(plisp_cdr(plisp_car(expr))));
+            push(_state, JIT_R0);
+            plisp_compile_quasiquote(_state, plisp_cdr(expr));
+            pop(_state, JIT_R1);
+            jit_prepare();
+            jit_pushargr(JIT_R1);
+            jit_pushargr(JIT_R0);
+            jit_finishi(plisp_append);
+            jit_retval(JIT_R0);
         } else {
             plisp_compile_quasiquote(_state, plisp_car(expr));
             push(_state, JIT_R0);
