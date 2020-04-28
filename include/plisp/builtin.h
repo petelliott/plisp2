@@ -68,4 +68,6 @@ plisp_t plisp_builtin_disassemble(plisp_t *clos, size_t nargs, plisp_t expr);
 
 plisp_t plisp_builtin_hashq(plisp_t *clos, size_t nargs, plisp_t obj, plisp_t bits);
 
+plisp_t plisp_builtin_unspecified(plisp_t *clos, size_t nargs);
+
 #endif

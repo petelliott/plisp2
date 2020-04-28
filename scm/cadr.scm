@@ -11,3 +11,6 @@
 
 (define (cddr obj)
   (cdr (cdr obj)))
+
+(define (cadar obj)
+  (car (cdar obj)))

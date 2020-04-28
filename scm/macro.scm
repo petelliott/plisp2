@@ -12,7 +12,8 @@
   (assq-ref macros sym))
 
 (define (macro-set! sym fn)
-  (set! macros (acons sym fn macros)))
+  (set! macros (acons sym fn macros))
+  (unspecified))
 ;;; end
 
 ;; expand the unquoted part of quasiquotes

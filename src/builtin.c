@@ -70,6 +70,7 @@ void plisp_init_builtin(void) {
     plisp_define_builtin("apply", plisp_builtin_apply);
     plisp_define_builtin("hashq", plisp_builtin_hashq);
 
+    plisp_define_builtin("unspecified", plisp_builtin_unspecified);
 
     #pragma GCC diagnostic pop
 
@@ -599,4 +600,9 @@ plisp_t plisp_builtin_hashq(plisp_t *clos, size_t nargs, plisp_t obj,
     plisp_assert(nargs == 2);
     return plisp_make_fixnum((((uintptr_t) obj) * 11400714819323198485llu)
                              >> (64 - plisp_fixnum_value(bits)));
+}
+
+plisp_t plisp_builtin_unspecified(plisp_t *clos, size_t nargs) {
+    plisp_assert(nargs == 0);
+    return plisp_unspec;
 }
