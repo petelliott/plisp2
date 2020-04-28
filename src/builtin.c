@@ -63,7 +63,7 @@ void plisp_init_builtin(void) {
     plisp_define_builtin("load", plisp_builtin_load);
 
     plisp_define_builtin("eval", plisp_builtin_eval);
-    plisp_define_builtin("apply", plisp_generate_apply());
+    plisp_define_builtin("apply", plisp_builtin_apply);
     plisp_define_builtin("hashq", plisp_builtin_hashq);
 
 
@@ -84,22 +84,14 @@ plisp_t plisp_builtin_plus(plisp_t *clos, size_t nargs, plisp_t a,
     plisp_assert(plisp_c_fixnump(a));
     plisp_assert(plisp_c_fixnump(b));
 
-    plisp_c_write(stdout, a);
-    printf("\n");
-    plisp_c_write(stdout, b);
-    printf("\n");
-
     va_list vl;
     va_start(vl, b);
 
     plisp_t sum = a + b;
 
     for (size_t i = 2; i < nargs; ++i) {
-        //printf("%lu\n", i);
         plisp_t arg = va_arg(vl, plisp_t);
         plisp_assert(plisp_c_fixnump(arg));
-        plisp_c_write(stdout, arg);
-        printf("\n");
         sum += arg;
     }
 
@@ -472,130 +464,96 @@ plisp_t plisp_builtin_eval(plisp_t *clos, size_t nargs, plisp_t expr) {
     return plisp_toplevel_eval(expr);
 }
 
-/* this function is written in assembly because its the only non-eval
-way of passing a number of arguments that is only known at runtime
-*/
-plisp_fn_t plisp_generate_apply(void) {
-    jit_state_t *_jit = jit_new_state();
+plisp_t plisp_builtin_apply(plisp_t *clos, size_t nargs, plisp_t fn, ...) {
+    plisp_assert(nargs >= 2);
+    plisp_assert(plisp_c_closurep(fn));
 
-    jit_prolog();
+    plisp_t args[32];
 
-    jit_arg(); // ignore the closure
-    jit_node_t *nargs = jit_arg();
-    jit_node_t *fun = jit_arg();
+    va_list vl;
+    va_start(vl, fn);
 
-    jit_getarg(JIT_V0, nargs);
-    jit_getarg(JIT_R0, fun);
-    jit_ellipsis();
-    jit_va_start(JIT_V2);
+    size_t nnargs = 0;
+    for (size_t i = 0; i < (nargs-2); ++i) {
+        args[nnargs++] = va_arg(vl, plisp_t);
+    }
 
-    // used to find the start of the stack, and the function we are
-    // going to call. double whammy!
-    int fn = jit_allocai(sizeof(plisp_t));
-    jit_stxi(fn, JIT_FP, JIT_R0);
+    for (plisp_t lst = va_arg(vl, plisp_t); lst != plisp_nil; lst = plisp_cdr(lst)) {
+        args[nnargs++] = plisp_car(lst);
+    }
 
-    //TODO: assert nargs >= 1
-    jit_subi(JIT_V1, JIT_V0, 2);
-
-    jit_movi(JIT_R0, sizeof(plisp_t));
-    jit_allocar(JIT_V(3), JIT_R0);
-
-    jit_node_t *onlylist = jit_beqi(JIT_V0, 2);
-    jit_node_t *startloop = jit_label();
-
-    // main loop pushing args
-    jit_va_arg(JIT_R1, JIT_V2);
-    jit_movi(JIT_R0, sizeof(plisp_t));
-    jit_allocar(JIT_R0, JIT_R0);
-    jit_stxr(JIT_R0, JIT_FP, JIT_R1);
-
-    // TODO DEBUGGING
-    jit_prepare();
-    jit_pushargi((jit_word_t)"off %li\n");
-    jit_pushargr(JIT_R0);
-    jit_finishi(printf);
-
-    jit_subi(JIT_V0, JIT_V0, 1);
-    jit_node_t *endloop = jit_bgti(JIT_V0, 2);
-    jit_patch_at(endloop, startloop);
-    jit_patch(onlylist);
-
-    /* TODO TODO TODO TODO
-    // now we must push the list arguments
-    jit_va_arg(JIT_V2, JIT_V2);
-    jit_node_t *nulllst = jit_beqi(JIT_V2, plisp_nil);
-    jit_node_t *startloop2 = jit_label();
-
-    // increase the number of arguments
-    jit_addi(JIT_V1, JIT_V1, 1);
-
-    //get the car
-    jit_prepare();
-    jit_pushargr(JIT_V2);
-    jit_finishi(plisp_car);
-    jit_retval(JIT_R1);
-
-    //push the car
-    jit_movi(JIT_R0, sizeof(plisp_t));
-    jit_allocar(JIT_R0, JIT_R0);
-    jit_stxr(JIT_R0, JIT_FP, JIT_R1);
-
-    //get the cdr
-    jit_prepare();
-    jit_pushargr(JIT_V2);
-    jit_finishi(plisp_cdr);
-    jit_retval(JIT_V2);
-
-    jit_node_t *endloop2 = jit_bnei(JIT_V2, plisp_nil);
-    jit_patch_at(endloop2, startloop2);
-    jit_patch(nulllst);
-    */
-
-    //TODO assert fn is a closure
-    jit_ldxi(JIT_V2, JIT_FP, fn);
-    jit_andi(JIT_V2, JIT_V2, ~LOTAGS);
-    jit_ldxi(JIT_R0, JIT_V2, sizeof(plisp_fn_t));
-
-
-    // TODO DEBUGGING
-    jit_prepare();
-    jit_pushargi((jit_word_t)"of %li\n");
-    jit_pushargr(JIT_V(3));
-    jit_finishi(printf);
-
-    jit_prepare();
-    jit_pushargr(JIT_R0);
-    jit_pushargr(JIT_V1);
-    //jit_pushargi(0);
-
-    //* TODO
-    jit_movr(JIT_R0, JIT_V(3));
-    //printf("%i\n", fn);
-    jit_node_t *noargs2 = jit_beqi(JIT_V1, 0);
-    jit_node_t *startpushloop = jit_label();
-    jit_subi(JIT_R0, JIT_R0, 16); //TODO figure out the size
-
-    jit_ldxr(JIT_R1, JIT_FP, JIT_R0);
-
-    jit_pushargr(JIT_R1);
-
-    jit_subi(JIT_V1, JIT_V1, 1);
-    jit_node_t *endpushloop = jit_bnei(JIT_V1, 0);
-    jit_patch_at(endpushloop, startpushloop);
-    jit_patch(noargs2);
-    //*/
-
-    jit_ldr(JIT_R0, JIT_V2);
-    jit_finishr(JIT_R0);
-    jit_retval(JIT_R0);
-    jit_retr(JIT_R0);
-
-    plisp_fn_t apply = jit_emit();
-    jit_clear_state();
-
-    jit_disassemble();
-
-    return apply;
+    plisp_fn_t fun = plisp_closure_fun(fn);
+    void *cdata    = plisp_closure_data(fn);
+    if (nnargs == 0) {
+        return fun(cdata, nnargs);
+    } else if (nnargs == 1) {
+        return fun(cdata, nnargs, args[0]);
+    } else if (nnargs == 2) {
+        return fun(cdata, nnargs, args[0], args[1]);
+    } else if (nnargs == 3) {
+        return fun(cdata, nnargs, args[0], args[1], args[2]);
+    } else if (nnargs == 4) {
+        return fun(cdata, nnargs, args[0], args[1], args[2], args[3]);
+    } else if (nnargs == 5) {
+        return fun(cdata, nnargs, args[0], args[1], args[2], args[3], args[4]);
+    } else if (nnargs == 6) {
+        return fun(cdata, nnargs, args[0], args[1], args[2], args[3], args[4], args[5]);
+    } else if (nnargs == 7) {
+        return fun(cdata, nnargs, args[0], args[1], args[2], args[3], args[4], args[5], args[6]);
+    } else if (nnargs == 8) {
+        return fun(cdata, nnargs, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7]);
+    } else if (nnargs == 9) {
+        return fun(cdata, nnargs, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8]);
+    } else if (nnargs == 10) {
+        return fun(cdata, nnargs, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9]);
+    } else if (nnargs == 11) {
+        return fun(cdata, nnargs, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10]);
+    } else if (nnargs == 12) {
+        return fun(cdata, nnargs, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11]);
+    } else if (nnargs == 13) {
+        return fun(cdata, nnargs, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12]);
+    } else if (nnargs == 14) {
+        return fun(cdata, nnargs, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13]);
+    } else if (nnargs == 15) {
+        return fun(cdata, nnargs, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14]);
+    } else if (nnargs == 16) {
+        return fun(cdata, nnargs, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15]);
+    } else if (nnargs == 17) {
+        return fun(cdata, nnargs, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16]);
+    } else if (nnargs == 18) {
+        return fun(cdata, nnargs, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17]);
+    } else if (nnargs == 19) {
+        return fun(cdata, nnargs, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18]);
+    } else if (nnargs == 20) {
+        return fun(cdata, nnargs, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19]);
+    } else if (nnargs == 21) {
+        return fun(cdata, nnargs, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20]);
+    } else if (nnargs == 22) {
+        return fun(cdata, nnargs, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21]);
+    } else if (nnargs == 23) {
+        return fun(cdata, nnargs, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21], args[22]);
+    } else if (nnargs == 24) {
+        return fun(cdata, nnargs, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21], args[22], args[23]);
+    } else if (nnargs == 25) {
+        return fun(cdata, nnargs, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21], args[22], args[23], args[24]);
+    } else if (nnargs == 26) {
+        return fun(cdata, nnargs, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21], args[22], args[23], args[24], args[25]);
+    } else if (nnargs == 27) {
+        return fun(cdata, nnargs, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21], args[22], args[23], args[24], args[25], args[26]);
+    } else if (nnargs == 28) {
+        return fun(cdata, nnargs, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21], args[22], args[23], args[24], args[25], args[26], args[27]);
+    } else if (nnargs == 29) {
+        return fun(cdata, nnargs, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21], args[22], args[23], args[24], args[25], args[26], args[27], args[28]);
+    } else if (nnargs == 30) {
+        return fun(cdata, nnargs, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21], args[22], args[23], args[24], args[25], args[26], args[27], args[28], args[29]);
+    } else if (nnargs == 31) {
+        return fun(cdata, nnargs, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21], args[22], args[23], args[24], args[25], args[26], args[27], args[28], args[29], args[30]);
+    } else if (nnargs == 32) {
+        return fun(cdata, nnargs, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21], args[22], args[23], args[24], args[25], args[26], args[27], args[28], args[29], args[30], args[31]);
+    } else {
+        abort();
+    }
+    return plisp_nil;
 }
 
 
