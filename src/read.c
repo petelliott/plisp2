@@ -254,7 +254,13 @@ plisp_t plisp_c_read(FILE *f) {
     } else if (ch == '`') {
         return plisp_read_call(f, "quasiquote");
     } else if (ch == ',') {
-        return plisp_read_call(f, "unquote");
+        ch = fgetc(f);
+        if (ch == '@') {
+            return plisp_read_call(f, "unquote-splicing");
+        } else {
+            ungetc(ch, f);
+            return plisp_read_call(f, "unquote");
+        }
     } else if (ch == '#') {
         return plisp_read_hash(f);
     } else if (isdigit(ch)) {

@@ -16,6 +16,9 @@ static plisp_t lambda_sym;
 static plisp_t define_sym;
 static plisp_t if_sym;
 static plisp_t quote_sym;
+static plisp_t quasiquote_sym;
+static plisp_t unquote_sym;
+static plisp_t unquote_splicing_sym;
 static plisp_t set_sym;
 
 // associates jit context with functions
@@ -27,6 +30,9 @@ void plisp_init_compiler(char *argv0) {
     define_sym = plisp_intern(plisp_make_symbol("define"));
     if_sym = plisp_intern(plisp_make_symbol("if"));
     quote_sym = plisp_intern(plisp_make_symbol("quote"));
+    quasiquote_sym = plisp_intern(plisp_make_symbol("quasiquote"));
+    unquote_sym = plisp_intern(plisp_make_symbol("unquote"));
+    unquote_splicing_sym = plisp_intern(plisp_make_symbol("unquote-splicing"));
     set_sym = plisp_intern(plisp_make_symbol("set!"));
 }
 
@@ -299,6 +305,32 @@ static void plisp_compile_set(struct lambda_state *_state, plisp_t expr) {
     jit_movi(JIT_R0, plisp_unspec);
 }
 
+static void plisp_compile_quasiquote(struct lambda_state *_state, plisp_t expr) {
+    // TODO optimize when never unquoted
+
+    if (plisp_c_consp(expr)) {
+        if (plisp_car(expr) == unquote_sym) {
+            plisp_compile_expr(_state, plisp_car(plisp_cdr(expr)));
+        } else {
+            plisp_compile_quasiquote(_state, plisp_car(expr));
+            push(_state, JIT_R0);
+            plisp_compile_quasiquote(_state, plisp_cdr(expr));
+            pop(_state, JIT_R1);
+            jit_prepare();
+            jit_pushargr(JIT_R1);
+            jit_pushargr(JIT_R0);
+            jit_finishi(plisp_cons);
+            jit_retval(JIT_R0);
+        }
+    } else {
+        if (plisp_heap_allocated(expr)) {
+            plisp_gc_permanent(expr);
+        }
+        jit_movi(JIT_R0, expr);
+    }
+
+}
+
 static void plisp_compile_expr(struct lambda_state *_state, plisp_t expr) {
     if (plisp_c_consp(expr)) {
         if (plisp_car(expr) == lambda_sym) {
@@ -324,6 +356,8 @@ static void plisp_compile_expr(struct lambda_state *_state, plisp_t expr) {
                 plisp_gc_permanent(obj);
             }
             jit_movi(JIT_R0, obj);
+        } else if (plisp_car(expr) == quasiquote_sym) {
+            plisp_compile_quasiquote(_state, plisp_car(plisp_cdr(expr)));
         } else if (plisp_car(expr) == set_sym) {
             plisp_compile_set(_state, expr);
         } else {
