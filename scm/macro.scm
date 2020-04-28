@@ -20,24 +20,28 @@
 (define (macroexpand-qq expr)
   (if (not (list? expr))
       expr
-      (if (eq? (car expr) 'quasiquote)
+      (if (not (pair? expr))
           expr
-          (if (eq? (car expr) 'unquote)
-              (list 'unquote (macroexpand (cadr expr)))
-              (map macroexpand-qq expr)))))
+          (if (eq? (car expr) 'quasiquote)
+              expr
+              (if (eq? (car expr) 'unquote)
+                  (list 'unquote (macroexpand (cadr expr)))
+                  (map macroexpand-qq expr))))))
 
 (define (macroexpand expr)
   ;; no cond yet :-(
   (if (not (list? expr))
       expr
-      (if (eq? (car expr) 'quote) ; TODO quasiquote
+      (if (not (pair? expr))
           expr
-          (if (eq? (car expr) 'quasiquote)
-              (list 'quasiquote (macroexpand-qq (cadr expr)))
-              (if (macro-find (car expr))
-                  (macroexpand (apply (macro-find (car expr))
-                                      (cdr expr)))
-                  (map macroexpand expr))))))
+          (if (eq? (car expr) 'quote) ; TODO quasiquote
+              expr
+              (if (eq? (car expr) 'quasiquote)
+                  (list 'quasiquote (macroexpand-qq (cadr expr)))
+                  (if (macro-find (car expr))
+                      (macroexpand (apply (macro-find (car expr))
+                                          (cdr expr)))
+                      (map macroexpand expr)))))))
 
 (macro-set! 'define-macro
             (lambda (args . body)
