@@ -311,6 +311,8 @@ static void plisp_compile_quasiquote(struct lambda_state *_state, plisp_t expr) 
     if (plisp_c_consp(expr)) {
         if (plisp_car(expr) == unquote_sym) {
             plisp_compile_expr(_state, plisp_car(plisp_cdr(expr)));
+        } else if (plisp_car(expr) == quasiquote_sym) {
+            jit_movi(JIT_R0, expr);
         } else if (plisp_c_consp(plisp_car(expr))
                    && plisp_car(plisp_car(expr)) == unquote_splicing_sym) {
             plisp_compile_expr(_state, plisp_car(plisp_cdr(plisp_car(expr))));
