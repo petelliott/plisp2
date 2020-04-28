@@ -9,6 +9,7 @@
 #include <plisp/posix.h>
 #include <stdarg.h>
 #include <string.h>
+#include <lightning.h>
 
 static plisp_t filesym;
 
@@ -62,6 +63,7 @@ void plisp_init_builtin(void) {
     plisp_define_builtin("load", plisp_builtin_load);
 
     plisp_define_builtin("eval", plisp_builtin_eval);
+    plisp_define_builtin("apply", plisp_generate_apply());
     plisp_define_builtin("hashq", plisp_builtin_hashq);
 
 
@@ -78,9 +80,14 @@ void plisp_define_builtin(const char *name, plisp_fn_t fun) {
 
 plisp_t plisp_builtin_plus(plisp_t *clos, size_t nargs, plisp_t a,
                            plisp_t b, ...) {
+    plisp_assert(nargs >= 2);
     plisp_assert(plisp_c_fixnump(a));
     plisp_assert(plisp_c_fixnump(b));
-    plisp_assert(nargs >= 2);
+
+    plisp_c_write(stdout, a);
+    printf("\n");
+    plisp_c_write(stdout, b);
+    printf("\n");
 
     va_list vl;
     va_start(vl, b);
@@ -88,8 +95,11 @@ plisp_t plisp_builtin_plus(plisp_t *clos, size_t nargs, plisp_t a,
     plisp_t sum = a + b;
 
     for (size_t i = 2; i < nargs; ++i) {
+        //printf("%lu\n", i);
         plisp_t arg = va_arg(vl, plisp_t);
         plisp_assert(plisp_c_fixnump(arg));
+        plisp_c_write(stdout, arg);
+        printf("\n");
         sum += arg;
     }
 
@@ -461,6 +471,133 @@ plisp_t plisp_builtin_eval(plisp_t *clos, size_t nargs, plisp_t expr) {
     plisp_assert(nargs == 1);
     return plisp_toplevel_eval(expr);
 }
+
+/* this function is written in assembly because its the only non-eval
+way of passing a number of arguments that is only known at runtime
+*/
+plisp_fn_t plisp_generate_apply(void) {
+    jit_state_t *_jit = jit_new_state();
+
+    jit_prolog();
+
+    jit_arg(); // ignore the closure
+    jit_node_t *nargs = jit_arg();
+    jit_node_t *fun = jit_arg();
+
+    jit_getarg(JIT_V0, nargs);
+    jit_getarg(JIT_R0, fun);
+    jit_ellipsis();
+    jit_va_start(JIT_V2);
+
+    // used to find the start of the stack, and the function we are
+    // going to call. double whammy!
+    int fn = jit_allocai(sizeof(plisp_t));
+    jit_stxi(fn, JIT_FP, JIT_R0);
+
+    //TODO: assert nargs >= 1
+    jit_subi(JIT_V1, JIT_V0, 2);
+
+    jit_movi(JIT_R0, sizeof(plisp_t));
+    jit_allocar(JIT_V(3), JIT_R0);
+
+    jit_node_t *onlylist = jit_beqi(JIT_V0, 2);
+    jit_node_t *startloop = jit_label();
+
+    // main loop pushing args
+    jit_va_arg(JIT_R1, JIT_V2);
+    jit_movi(JIT_R0, sizeof(plisp_t));
+    jit_allocar(JIT_R0, JIT_R0);
+    jit_stxr(JIT_R0, JIT_FP, JIT_R1);
+
+    // TODO DEBUGGING
+    jit_prepare();
+    jit_pushargi((jit_word_t)"off %li\n");
+    jit_pushargr(JIT_R0);
+    jit_finishi(printf);
+
+    jit_subi(JIT_V0, JIT_V0, 1);
+    jit_node_t *endloop = jit_bgti(JIT_V0, 2);
+    jit_patch_at(endloop, startloop);
+    jit_patch(onlylist);
+
+    /* TODO TODO TODO TODO
+    // now we must push the list arguments
+    jit_va_arg(JIT_V2, JIT_V2);
+    jit_node_t *nulllst = jit_beqi(JIT_V2, plisp_nil);
+    jit_node_t *startloop2 = jit_label();
+
+    // increase the number of arguments
+    jit_addi(JIT_V1, JIT_V1, 1);
+
+    //get the car
+    jit_prepare();
+    jit_pushargr(JIT_V2);
+    jit_finishi(plisp_car);
+    jit_retval(JIT_R1);
+
+    //push the car
+    jit_movi(JIT_R0, sizeof(plisp_t));
+    jit_allocar(JIT_R0, JIT_R0);
+    jit_stxr(JIT_R0, JIT_FP, JIT_R1);
+
+    //get the cdr
+    jit_prepare();
+    jit_pushargr(JIT_V2);
+    jit_finishi(plisp_cdr);
+    jit_retval(JIT_V2);
+
+    jit_node_t *endloop2 = jit_bnei(JIT_V2, plisp_nil);
+    jit_patch_at(endloop2, startloop2);
+    jit_patch(nulllst);
+    */
+
+    //TODO assert fn is a closure
+    jit_ldxi(JIT_V2, JIT_FP, fn);
+    jit_andi(JIT_V2, JIT_V2, ~LOTAGS);
+    jit_ldxi(JIT_R0, JIT_V2, sizeof(plisp_fn_t));
+
+
+    // TODO DEBUGGING
+    jit_prepare();
+    jit_pushargi((jit_word_t)"of %li\n");
+    jit_pushargr(JIT_V(3));
+    jit_finishi(printf);
+
+    jit_prepare();
+    jit_pushargr(JIT_R0);
+    jit_pushargr(JIT_V1);
+    //jit_pushargi(0);
+
+    //* TODO
+    jit_movr(JIT_R0, JIT_V(3));
+    //printf("%i\n", fn);
+    jit_node_t *noargs2 = jit_beqi(JIT_V1, 0);
+    jit_node_t *startpushloop = jit_label();
+    jit_subi(JIT_R0, JIT_R0, 16); //TODO figure out the size
+
+    jit_ldxr(JIT_R1, JIT_FP, JIT_R0);
+
+    jit_pushargr(JIT_R1);
+
+    jit_subi(JIT_V1, JIT_V1, 1);
+    jit_node_t *endpushloop = jit_bnei(JIT_V1, 0);
+    jit_patch_at(endpushloop, startpushloop);
+    jit_patch(noargs2);
+    //*/
+
+    jit_ldr(JIT_R0, JIT_V2);
+    jit_finishr(JIT_R0);
+    jit_retval(JIT_R0);
+    jit_retr(JIT_R0);
+
+    plisp_fn_t apply = jit_emit();
+    jit_clear_state();
+
+    jit_disassemble();
+
+    return apply;
+}
+
 
 plisp_t plisp_builtin_disassemble(plisp_t *clos, size_t nargs, plisp_t expr) {
     plisp_assert(nargs == 1);
