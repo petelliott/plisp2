@@ -26,7 +26,9 @@
               expr
               (if (eq? (car expr) 'unquote)
                   (list 'unquote (macroexpand (cadr expr)))
-                  (map macroexpand-qq expr))))))
+                  (if (eq? (car expr) 'unquote-splicing)
+                      (list 'unquote-splicing (macroexpand (cadr expr)))
+                      (map macroexpand-qq expr)))))))
 
 (define (macroexpand expr)
   ;; no cond yet :-(
