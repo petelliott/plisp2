@@ -5,6 +5,12 @@
   `((lambda ,(map car args)
       ,@body) ,@(map cadr args)))
 
+(define-macro (let* args . body)
+  (if (null? args)
+      `(begin ,@body)
+      `((lambda (,(caar args))
+          (let* ,(cdr args) ,@body)) ,(cadar args))))
+
 (define-macro (begin . body)
   (if (null? body)
       (unspecified)
