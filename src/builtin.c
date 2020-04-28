@@ -170,12 +170,12 @@ plisp_t plisp_builtin_reverse(plisp_t *clos, size_t nargs,
                               plisp_t lst, plisp_t onto) {
     plisp_assert(nargs == 1 || nargs == 2);
 
-    if (plisp_c_nullp(lst)) {
-        return onto;
-    }
-
     if (nargs == 1) {
         onto = plisp_nil;
+    }
+
+    if (plisp_c_nullp(lst)) {
+        return onto;
     }
 
     return plisp_builtin_reverse(NULL, 2, plisp_cdr(lst),
