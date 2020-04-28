@@ -6,6 +6,7 @@
 #include <plisp/builtin.h>
 #include <plisp/gc.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <assert.h>
 
 
@@ -15,6 +16,12 @@ int main(int argc, char *argv[]) {
     plisp_init_compiler(argv[0]);
     plisp_init_toplevel();
     plisp_init_builtin();
+
+    // load the standard library
+    const char *bootfile = getenv("PLISP_BOOT");
+    if (bootfile != NULL) {
+        plisp_c_load(bootfile);
+    }
 
     if (argc > 1) {
         plisp_c_load(argv[1]);
