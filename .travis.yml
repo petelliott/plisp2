@@ -1,6 +1,7 @@
 language: generic
 
 install:
+  - sudo apt update
   - sudo apt install libjudy-dev
   - curl https://ftp.gnu.org/gnu/lightning/lightning-2.1.3.tar.gz | tar -zx
   - cd lightning-2.1.3 && ./configure && make && sudo make install && cd ..
