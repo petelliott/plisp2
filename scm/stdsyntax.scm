@@ -39,10 +39,11 @@
               #f))))
 
 (define-macro (or . terms)
+  (define res (gensym))
   (cond
    ((null? terms) #f)
    ((null? (cdr terms)) (car terms))
-   (else `(let ((res ,(car terms)))
-             (if res
-                 res
+   (else `(let ((,res ,(car terms)))
+             (if ,res
+                 ,res
                  (or ,@(cdr terms)))))))

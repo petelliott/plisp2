@@ -70,4 +70,6 @@ plisp_t plisp_builtin_hashq(plisp_t *clos, size_t nargs, plisp_t obj, plisp_t bi
 
 plisp_t plisp_builtin_unspecified(plisp_t *clos, size_t nargs);
 
+plisp_t plisp_builtin_gensym(plisp_t *clos, size_t nargs);
+
 #endif

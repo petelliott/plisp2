@@ -72,6 +72,8 @@ void plisp_init_builtin(void) {
 
     plisp_define_builtin("unspecified", plisp_builtin_unspecified);
 
+    plisp_define_builtin("gensym", plisp_builtin_gensym);
+
     #pragma GCC diagnostic pop
 
     plisp_init_posix();
@@ -605,4 +607,18 @@ plisp_t plisp_builtin_hashq(plisp_t *clos, size_t nargs, plisp_t obj,
 plisp_t plisp_builtin_unspecified(plisp_t *clos, size_t nargs) {
     plisp_assert(nargs == 0);
     return plisp_unspec;
+}
+
+plisp_t plisp_builtin_gensym(plisp_t *clos, size_t nargs) {
+    plisp_assert(nargs == 0);
+    static size_t gscounter = 0;
+
+    char buff[64];
+    plisp_t sym;
+    do {
+        snprintf(buff, 64, "g%lu", gscounter);
+        sym = plisp_make_symbol(buff);
+        gscounter++;
+    } while(plisp_symbol_internedp(sym));
+    return plisp_intern(sym);
 }

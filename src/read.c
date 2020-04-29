@@ -42,6 +42,14 @@ plisp_t plisp_intern(plisp_t sym) {
     return sym;
 }
 
+bool plisp_symbol_internedp(plisp_t sym) {
+    const unsigned char *key = (const unsigned char *)
+        plisp_string_value(plisp_symbol_name(sym));
+    plisp_t *val;
+    JSLG(val, intern_table, key);
+    return val != NULL;
+}
+
 // skips over comments an whitespace, ch will be set to the first
 // non-comment, non-whitespace character
 static void skip_cws(FILE *f, int *ch) {
