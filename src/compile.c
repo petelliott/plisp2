@@ -50,6 +50,7 @@ struct lambda_state {
     Pvoid_t closure_vars;
     size_t closure_idx;
     int closure_on_stack;
+    Pvoid_t boxed;
 };
 #define _jit (_state->jit)
 
@@ -174,7 +175,8 @@ static void plisp_compile_if(struct lambda_state *_state, plisp_t expr) {
 }
 
 
-static ssize_t plisp_get_closure(struct lambda_state *_state, plisp_t sym) {
+static ssize_t plisp_get_closure(struct lambda_state *_state,
+                                 plisp_t sym, bool *boxed) {
     if (_state->parent == NULL) {
         return -1;
     }
@@ -183,19 +185,30 @@ static ssize_t plisp_get_closure(struct lambda_state *_state, plisp_t sym) {
     JLG(pval, _state->arg_table, sym);
     // tell everyone below us to add the value to their closures
     if (pval != NULL) {
+        bool *bval;
+        JLG(bval, _state->boxed, sym);
+        *boxed = *bval;
         return 0;
     }
 
     size_t *clnum;
     JLG(clnum, _state->closure_vars, sym);
     if (clnum != NULL) {
+        bool *bval;
+        JLG(bval, _state->boxed, sym);
+        *boxed = *bval;
+
         return *clnum;
     }
 
-    ssize_t idx = plisp_get_closure(_state->parent, sym);
+    ssize_t idx = plisp_get_closure(_state->parent, sym, boxed);
     if (idx == -1) {
         return -1;
     } else {
+        bool *bval;
+        JLI(bval, _state->boxed, sym);
+        *bval = *boxed;
+
         JLI(clnum, _state->closure_vars, sym);
         *clnum = _state->closure_idx;
         _state->closure_idx++;
@@ -203,7 +216,60 @@ static ssize_t plisp_get_closure(struct lambda_state *_state, plisp_t sym) {
     }
 }
 
+static void unbox_R0(struct lambda_state *_state) {
+    jit_andi(JIT_R0, JIT_R0, ~LOTAGS);
+    jit_ldr(JIT_R0, JIT_R0);
+}
+
 static void plisp_compile_ref(struct lambda_state *_state, plisp_t sym) {
+
+    int *pval;
+    JLG(pval, _state->arg_table, sym);
+    if (pval != NULL) {
+        bool *bval;
+        JLG(bval, _state->boxed, sym);
+
+        jit_ldxi(JIT_R0, JIT_FP, *pval);
+        if (*bval) {
+            unbox_R0(_state);
+        }
+        return;
+    }
+
+    bool boxed;
+    ssize_t closure_idx = plisp_get_closure(_state, sym, &boxed);
+    if (closure_idx != -1) {
+        jit_ldxi(JIT_R0, JIT_FP, _state->closure_on_stack);
+        jit_ldxi(JIT_R0, JIT_R0, (closure_idx+1) * sizeof(plisp_t));
+
+        if (boxed) {
+            unbox_R0(_state);
+        }
+        return;
+    }
+
+    plisp_t *tl_slot = plisp_toplevel_ref(sym);
+    jit_ldi(JIT_R0, tl_slot);
+
+    #ifndef PLISP_UNSAFE
+    // don't generate a runtime check if the variable is bound at
+    // compile time
+    if (*tl_slot == plisp_unbound) {
+        push(_state, JIT_R0);
+
+        // assert that the variable we reference is bound
+        jit_prepare();
+        jit_pushargr(JIT_R0);
+        jit_pushargi(sym);
+        jit_finishi(assert_bound);
+
+        pop(_state, JIT_R0);
+    }
+    #endif
+}
+
+static void plisp_compile_closure_ref(struct lambda_state *_state, plisp_t sym) {
+
     int *pval;
     JLG(pval, _state->arg_table, sym);
     if (pval != NULL) {
@@ -211,7 +277,8 @@ static void plisp_compile_ref(struct lambda_state *_state, plisp_t sym) {
         return;
     }
 
-    ssize_t closure_idx = plisp_get_closure(_state, sym);
+    bool boxed;
+    ssize_t closure_idx = plisp_get_closure(_state, sym, &boxed);
     if (closure_idx != -1) {
         jit_ldxi(JIT_R0, JIT_FP, _state->closure_on_stack);
         jit_ldxi(JIT_R0, JIT_R0, (closure_idx+1) * sizeof(plisp_t));
@@ -262,7 +329,7 @@ static void plisp_compile_gen_closure(struct lambda_state *_state,
     plisp_t idx = 0;
     JLF(off, closure, idx);
     while (off != NULL) {
-        plisp_compile_ref(_state, idx);
+        plisp_compile_closure_ref(_state, idx);
         jit_stxi((*off+1) * sizeof(plisp_t), JIT_R1, JIT_R0);
         JLN(off, closure, idx);
     }
@@ -277,13 +344,42 @@ static void plisp_compile_set(struct lambda_state *_state, plisp_t expr) {
     int *pval;
     JLG(pval, _state->arg_table, sym);
     if (pval != NULL) {
+        bool *bval;
+        JLG(bval, _state->boxed, sym);
+
         plisp_compile_expr(_state, value);
-        jit_stxi(*pval, JIT_FP, JIT_R0);
+        if (*bval) {
+            jit_ldxi(JIT_R1, JIT_FP, *pval);
+            jit_andi(JIT_R1, JIT_R1, ~LOTAGS);
+            jit_str(JIT_R1, JIT_R0);
+        } else {
+            //idk if this will happen either
+            jit_stxi(*pval, JIT_FP, JIT_R0);
+        }
+
         jit_movi(JIT_R0, plisp_unspec);
         return;
     }
 
-    // TODO: set enclosed variables
+    bool boxed;
+    ssize_t closure_idx = plisp_get_closure(_state, sym, &boxed);
+    if (closure_idx != -1) {
+        plisp_compile_expr(_state, value);
+
+        jit_ldxi(JIT_R1, JIT_FP, _state->closure_on_stack);
+
+        if (boxed) {
+            jit_ldxi(JIT_R1, JIT_R1, (closure_idx+1) * sizeof(plisp_t));
+            jit_andi(JIT_R1, JIT_R1, ~LOTAGS);
+            jit_str(JIT_R1, JIT_R0);
+        } else {
+            // I don't think this will ever actually happen
+            jit_stxi(JIT_R1, (closure_idx+1) * sizeof(plisp_t), JIT_R1);
+        }
+
+        jit_movi(JIT_R0, plisp_unspec);
+        return;
+    }
 
     plisp_t *tl_slot = plisp_toplevel_ref(sym);
 
@@ -386,9 +482,95 @@ static void plisp_compile_expr(struct lambda_state *_state, plisp_t expr) {
     }
 }
 
-static void plisp_compile_local_define(struct lambda_state *_state,
-                                       plisp_t form) {
+static bool plisp_must_be_boxed(plisp_t sym, plisp_t cdr);
 
+static bool plisp_must_be_boxed_expr(plisp_t sym, plisp_t expr) {
+    if (!plisp_c_consp(expr)) {
+        return false;
+    }
+
+    plisp_t car = plisp_car(expr);
+
+    if (car == set_sym) {
+        if (plisp_car(plisp_cdr(expr)) == sym) {
+            return true;
+        }
+    } else if (car == lambda_sym
+               || (car == define_sym &&
+                   plisp_c_consp(plisp_car(plisp_cdr(expr))))) {
+
+        plisp_t args, body;
+
+        if (car == define_sym) {
+            args = plisp_cdr(plisp_car(plisp_cdr(expr)));
+            body = plisp_cdr(plisp_cdr(expr));
+        } else {
+            args = plisp_car(plisp_cdr(expr));
+            body = plisp_cdr(plisp_cdr(expr));
+        }
+
+        plisp_t i;
+        for (i = args; plisp_c_consp(i); i = plisp_cdr(i)) {
+            if (i == sym) {
+                // the variable is shaddowed
+                return false;
+            }
+        }
+        if (i == sym) {
+            // the variable is shadowed
+            return false;
+        }
+
+        return plisp_must_be_boxed(sym, body);
+    }
+
+    for (plisp_t i = expr;
+            i != plisp_nil; i = plisp_cdr(i)) {
+
+        if (plisp_must_be_boxed_expr(sym, plisp_car(i))) {
+            return true;
+        }
+
+    }
+
+    return false;
+}
+
+static bool plisp_must_be_boxed(plisp_t sym, plisp_t cdr) {
+    if (cdr == plisp_nil) {
+        return false;
+    }
+
+    plisp_t stmt = plisp_car(cdr);
+    if (plisp_c_consp(stmt) && plisp_car(stmt) == define_sym
+        && plisp_car(plisp_cdr(stmt)) == sym) {
+
+        // the variable has been shadowed by a define
+        // but it might be set, then continuated in the arguments
+        return plisp_must_be_boxed_expr(sym, stmt);
+    } else if (plisp_c_consp(stmt) && plisp_car(stmt) == define_sym
+          && plisp_c_consp(plisp_car(plisp_cdr(stmt)))
+          && plisp_car(plisp_car(plisp_cdr(stmt))) == sym) {
+        // the variable has been shadowed by a define
+        // but it might be set, then continuated in the arguments
+        return plisp_must_be_boxed_expr(sym, stmt);
+    } else {
+        return plisp_must_be_boxed_expr(sym, stmt)
+            || plisp_must_be_boxed(sym, plisp_cdr(cdr));
+    }
+}
+
+static void box_R0(struct lambda_state *_state) {
+    jit_prepare();
+    jit_pushargr(JIT_R0);
+    jit_finishi(plisp_make_consbox);
+    jit_retval(JIT_R0);
+}
+
+static void plisp_compile_local_define(struct lambda_state *_state,
+                                       plisp_t exprlist) {
+
+    plisp_t form = plisp_car(exprlist);
     plisp_t sym;
     plisp_t valexpr;
 
@@ -409,20 +591,29 @@ static void plisp_compile_local_define(struct lambda_state *_state,
         valexpr = plisp_car(plisp_cdr(plisp_cdr(form)));
     }
 
+    bool *bval;
+    JLI(bval, _state->boxed, sym);
+    *bval = plisp_must_be_boxed(sym, plisp_cdr(exprlist));
 
     int *pval;
     JLI(pval, _state->arg_table, sym);
 
     plisp_compile_expr(_state, valexpr);
+
+    if (*bval) {
+        box_R0(_state);
+    }
+
     *pval = push_perm(_state, JIT_R0);
 
     jit_movi(JIT_R0, plisp_unspec);
 }
 
 
-static void plisp_compile_stmt(struct lambda_state *_state, plisp_t expr) {
+static void plisp_compile_stmt(struct lambda_state *_state, plisp_t exprlist) {
+    plisp_t expr = plisp_car(exprlist);
     if (plisp_c_consp(expr) && plisp_car(expr) == define_sym) {
-        plisp_compile_local_define(_state, expr);
+        plisp_compile_local_define(_state, exprlist);
     } else {
         plisp_compile_expr(_state, expr);
     }
@@ -473,10 +664,21 @@ static plisp_fn_t plisp_compile_lambda_context(
     for (arglist = plisp_car(plisp_cdr(lambda));
          plisp_c_consp(arglist); arglist = plisp_cdr(arglist)) {
 
+        plisp_t sym = plisp_car(arglist);
+
+        bool *bval;
+        JLI(bval, _state->boxed,sym);
+        *bval = plisp_must_be_boxed(sym, plisp_cdr(plisp_cdr(lambda)));
+
         int *pval;
-        JLI(pval, _state->arg_table, plisp_car(arglist));
+        JLI(pval, _state->arg_table, sym);
 
         jit_getarg(JIT_R0, jit_arg());
+
+        if (*bval) {
+            box_R0(_state);
+        }
+
         *pval = push_perm(_state, JIT_R0);
 
         real_nargs++;
@@ -522,6 +724,14 @@ static plisp_fn_t plisp_compile_lambda_context(
         int *pval;
         JLI(pval, _state->arg_table, arglist);
         jit_retval(JIT_R0);
+
+
+        bool *bval;
+        JLI(bval, _state->boxed, arglist);
+        *bval = plisp_must_be_boxed(arglist, plisp_cdr(plisp_cdr(lambda)));
+        if (*bval) {
+            box_R0(_state);
+        }
         *pval = push_perm(_state, JIT_R0);
 
         jit_va_end(JIT_R1);
@@ -530,7 +740,7 @@ static plisp_fn_t plisp_compile_lambda_context(
     for (plisp_t exprlist = plisp_cdr(plisp_cdr(lambda));
          exprlist != plisp_nil; exprlist = plisp_cdr(exprlist)) {
 
-        plisp_compile_stmt(_state, plisp_car(exprlist));
+        plisp_compile_stmt(_state, exprlist);
     }
     jit_retr(JIT_R0);
 

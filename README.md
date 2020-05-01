@@ -46,6 +46,6 @@ I hope that someday plisp will be a full r5rs implementation
 - [ ] continuations
 - [x] apply/eval
 - [x] immutable closures
-- [ ] mutable closures
+- [x] mutable closures
 - [ ] r5rs compliance
 - [ ] numerical tower
