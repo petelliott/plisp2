@@ -31,3 +31,9 @@
          (or 1 2)
          (or 1 (newline) (newline))
          (or #f #f 2))
+
+(println (when #f (write 'a) (write 'b) 8)
+         (when #t 7))
+
+(println (unless #t (write 'a) (write 'b) 8)
+         (unless #f 7))

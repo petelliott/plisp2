@@ -47,3 +47,13 @@
              (if ,res
                  ,res
                  (or ,@(cdr terms)))))))
+
+(define-macro (when cond . body)
+  `(if ,cond
+       (begin ,@body)
+       ,(unspecified)))
+
+(define-macro (unless cond . body)
+  `(if ,cond
+       ,(unspecified)
+       (begin ,@body)))
