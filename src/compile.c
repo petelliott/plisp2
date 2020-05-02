@@ -643,7 +643,8 @@ static plisp_fn_t plisp_compile_lambda_context(
         .stack_nopop = 0,
         .parent = parent_state,
         .closure_vars = NULL,
-        .closure_idx = 0
+        .closure_idx = 0,
+        .boxed = NULL
     };
 
     struct lambda_state *_state = &state;
@@ -746,6 +747,9 @@ static plisp_fn_t plisp_compile_lambda_context(
 
     size_t Rc_word;
     JLFA(Rc_word, _state->arg_table);
+    //JLFA(Rc_word, _state->closure_vars);
+    // closure_vars is returned so it must be freed later
+    JLFA(Rc_word, _state->boxed);
 
     plisp_fn_t fun = jit_emit();
     jit_clear_state();
