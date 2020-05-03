@@ -7,6 +7,7 @@
 #include <plisp/saftey.h>
 #include <plisp/gc.h>
 #include <plisp/posix.h>
+#include <plisp/continuation.h>
 #include <stdarg.h>
 #include <string.h>
 #include <lightning.h>
@@ -77,6 +78,7 @@ void plisp_init_builtin(void) {
     #pragma GCC diagnostic pop
 
     plisp_init_posix();
+    plisp_init_continuation();
 }
 
 void plisp_define_builtin(const char *name, plisp_fn_t fun) {
