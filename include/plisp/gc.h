@@ -3,6 +3,7 @@
 
 #include <plisp/object.h>
 
+extern plisp_t *stack_bottom;
 
 void plisp_init_gc(void);
 

@@ -7,10 +7,10 @@
                     (cont 6)
                     7)))
 
-;(define c #f)
-;
-;(println (call/cc (lambda (cont) (set! c cont))))
-;
-;(when c
-;  (c 66)
-;  (set! c #f))
+(define c #f)
+
+(println (call/cc (lambda (cont) (set! c cont))))
+
+(when c
+  (c 66)
+  (set! c #f))

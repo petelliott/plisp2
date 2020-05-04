@@ -19,7 +19,7 @@ struct obj_allocs {
 // pool for allocating cons sized objects
 static struct obj_allocs *conspool = NULL;
 static plisp_t perm_root = plisp_nil;
-static plisp_t *stack_bottom;
+plisp_t *stack_bottom;
 
 
 // thanks jacob <3
